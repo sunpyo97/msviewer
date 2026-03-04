@@ -30,9 +30,13 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
                 return;
             }
 
-            // 2. 다중 계정 목록 확인
-            if (adminData.judges && Array.isArray(adminData.judges)) {
-                const judge = adminData.judges.find(j => j.id === id && j.password === pw);
+            // 2. 계정 목록 확인 (배열/객체 형식 호환)
+            if (adminData.judges) {
+                const judgesList = Array.isArray(adminData.judges)
+                    ? adminData.judges
+                    : Object.values(adminData.judges);
+
+                const judge = judgesList.find(j => j.id === id && j.password === pw);
                 if (judge) {
                     proceedLogin(judge);
                     return;
