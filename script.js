@@ -94,31 +94,37 @@ if (currentJudge) {
         }
     };
 
-    // UI 초기화
+    // UI 초기화 함수
     function initUI() {
-        if (!currentJudge) return; // 세션 없으면 실행 안함
+        if (!currentJudge) return;
 
-        document.querySelector('.user-name').innerText = `심사위원: ${currentJudge.name}`;
+        // 성함 정보는 세션에서 가져와 즉시 표시
+        const userNameElement = document.querySelector('.user-name');
+        if (userNameElement) {
+            userNameElement.innerText = `심사위원: ${currentJudge.name}`;
+        }
 
-        // 대분류 선택기 구성
-        const mainSelect = document.getElementById('mainCategorySelect');
-        // 세션 정보에서 허용된 카테고리 가져오기 (login-script.js에서 연동됨)
-        const allowed = currentJudge.allowedMainCategories || Object.keys(JUDGING_SCHEMA);
+        // 카테고리 선택기 구성 (데이터가 로드된 경우에만 실행)
+        if (window.currentData && window.currentData.videos && window.currentData.videos.length > 0) {
+            const mainSelect = document.getElementById('mainCategorySelect');
+            const allowed = currentJudge.allowedMainCategories || Object.keys(JUDGING_SCHEMA);
 
-        mainSelect.innerHTML = '';
-        allowed.forEach(key => {
-            if (JUDGING_SCHEMA[key]) {
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.innerText = JUDGING_SCHEMA[key].name;
-                mainSelect.appendChild(opt);
+            mainSelect.innerHTML = '';
+            allowed.forEach(key => {
+                if (JUDGING_SCHEMA[key]) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.innerText = JUDGING_SCHEMA[key].name;
+                    mainSelect.appendChild(opt);
+                }
+            });
+
+            if (allowed && allowed.length > 0) {
+                updateSubOptions(allowed[0]);
             }
-        });
-
-        if (allowed && allowed.length > 0) {
-            updateSubOptions(allowed[0]);
         } else {
-            document.getElementById('mainCategorySelect').innerHTML = '<option>할당된 부문 없음</option>';
+            // 데이터 로딩 전 혹은 실패 시 기본 메시지
+            document.getElementById('mainCategorySelect').innerHTML = '<option>데이터 로딩 중...</option>';
             document.getElementById('subCategorySelect').innerHTML = '<option>-</option>';
         }
     }
@@ -504,22 +510,35 @@ if (currentJudge) {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
 
-    // 최종 제출 연동
-    window.addEventListener('judgeDataLoaded', () => {
-        // 초기화 실행
-        if (currentJudge) {
-            initUI();
-            document.getElementById('videoSelect').addEventListener('change', (e) => loadVideo(e.target.value));
-            document.getElementById('mainCategorySelect').addEventListener('change', (e) => updateSubOptions(e.target.value));
-            document.getElementById('subCategorySelect').addEventListener('change', (e) => {
-                const mainCat = document.getElementById('mainCategorySelect').value;
-                const subCat = e.target.value;
-                renderFields(mainCat, subCat);
-                updateVideoList(mainCat, subCat);
-            });
+    // === [핵심 수정] 초기화 및 리스너 등록 분리 ===
 
-            setTimeout(createWatermark, 500); // 폰트 로딩 대기 후 생성
-        }
+    // 1. 기본 UI 및 보안 설정 (즉시 실행)
+    initUI();
+
+    // 로그아웃 기능 즉시 연결
+    const logoutBtn = document.querySelector('.logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.removeItem('JUDGE_SESSION');
+            window.location.href = 'login.html';
+        });
+    }
+
+    // 보안 및 탭 감지 리스너 즉시 등록
+    setTimeout(createWatermark, 500);
+
+    document.getElementById('videoSelect').addEventListener('change', (e) => loadVideo(e.target.value));
+    document.getElementById('mainCategorySelect').addEventListener('change', (e) => updateSubOptions(e.target.value));
+    document.getElementById('subCategorySelect').addEventListener('change', (e) => {
+        const mainCat = document.getElementById('mainCategorySelect').value;
+        const subCat = e.target.value;
+        renderFields(mainCat, subCat);
+        updateVideoList(mainCat, subCat);
+    });
+
+    // 2. Firebase 데이터 로드 완료 후 연동
+    window.addEventListener('judgeDataLoaded', () => {
+        initUI(); // 카테고리 목록 갱신
 
         const submitBtn = document.querySelector('.btn.primary');
         if (submitBtn) {
@@ -573,19 +592,6 @@ if (currentJudge) {
             });
         }
     });
-
-
-    // 로그아웃 기능 (가장 상단 우선 처리)
-    const logoutBtn = document.querySelector('.logout-btn');
-    if (logoutBtn) {
-        // 기존 이벤트 클리어 후 재등록
-        const newLogoutBtn = logoutBtn.cloneNode(true);
-        logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
-        newLogoutBtn.addEventListener('click', () => {
-            sessionStorage.removeItem('JUDGE_SESSION');
-            window.location.href = 'login.html';
-        });
-    }
 
     // === 보안 강화 로직 (캡처 및 녹화 방지) ===
     // 1. 우클릭 및 기본 복사 금지
