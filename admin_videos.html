@@ -19,7 +19,22 @@
         </header>
 
         <section class="admin-grid">
-            <!-- 영상 등록 섹션 -->
+            <!-- CSV 대량 등록 섹션 -->
+            <div class="config-group"
+                style="grid-column: 1 / -1; border-left: 5px solid #10b981; background: rgba(16, 185, 129, 0.05);">
+                <h4>⚡ 대량 엑셀(CSV) 일괄 등록</h4>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;">
+                    출품작이 여러 개일 경우 <b>KODAF 폴더 스캐너</b>로 추출한 CSV 파일을 업로드하여 한 번에 1,500개 이상의 정보를 등록할 수 있습니다.
+                </p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" id="batchCsvFile" accept=".csv"
+                        style="flex: 1; padding: 10px; border: 1px bordered var(--border-color); border-radius: 8px;">
+                    <button class="btn primary" id="uploadBatchCsvBtn"
+                        style="background-color: #10b981; border-color: #10b981;">CSV 일괄 등록</button>
+                </div>
+            </div>
+
+            <!-- 영상 단건 등록 섹션 -->
             <div class="config-group">
                 <h4>신규 영상 등록</h4>
                 <div class="form-container">
@@ -264,6 +279,96 @@
                 window.renderVideoList();
             }
         }
+
+        // ================= CSV 일괄 등록 로직 =================
+        document.getElementById('uploadBatchCsvBtn').addEventListener('click', () => {
+            const fileInput = document.getElementById('batchCsvFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('업로드할 CSV 파일을 선택해주세요.');
+                return;
+            }
+
+            const btn = document.getElementById('uploadBatchCsvBtn');
+            btn.innerText = "처리 중...";
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                const rows = text.split('\n');
+
+                if (rows.length < 2) {
+                    alert('데이터가 없거나 형식이 올바르지 않습니다.');
+                    btn.innerText = "CSV 일괄 등록";
+                    btn.disabled = false;
+                    return;
+                }
+
+                let successCount = 0;
+                let newVideos = [];
+
+                for (let i = 1; i < rows.length; i++) {
+                    const rowText = rows[i].trim();
+                    if (!rowText) continue;
+
+                    const cols = rowText.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || rowText.split(',');
+                    const cleanCols = cols.map(c => c.replace(/^"|"$/g, '').trim());
+
+                    if (cleanCols.length < 8) continue;
+
+                    const vId = cleanCols[0];
+                    const vTitle = cleanCols[1] || '제목 없음';
+                    const vCompany = cleanCols[2] || '미상';
+                    const vMainCat = cleanCols[3] || 'marketing_campaign';
+                    const vSubCat = cleanCols[4] || 'default';
+                    const mainType = cleanCols[5] === 'doc' ? 'doc' : 'video';
+                    const uploadType = 'drive';
+                    const vDriveIdStr = cleanCols[7] || '';
+                    const vDriveAppForm = cleanCols[8] || null;
+                    const vDriveAddDesc = cleanCols[9] || null;
+
+                    const parsedDriveIds = vDriveIdStr.split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+                    const newVideo = {
+                        id: vId, title: vTitle, company: vCompany,
+                        mainCat: vMainCat, subCat: vSubCat,
+                        mainType: mainType,
+                        hasFile: false, fileCount: 0,
+                        driveIds: parsedDriveIds,
+                        appFormHasFile: false,
+                        appFormDriveId: vDriveAppForm,
+                        addDescHasFile: false,
+                        addDescDriveId: vDriveAddDesc
+                    };
+
+                    newVideos.push(newVideo);
+                    successCount++;
+                }
+
+                if (newVideos.length > 0) {
+                    window.currentAdminData.videos = window.currentAdminData.videos.concat(newVideos);
+                    window.saveAdminData();
+                    window.renderVideoList();
+                    alert(`✅ 총 ${successCount}건의 작품이 성공적으로 일괄 등록되었습니다.`);
+                } else {
+                    alert('등록할 유효한 데이터가 없습니다. CSV 형식을 확인해주세요.');
+                }
+
+                btn.innerText = "CSV 일괄 등록";
+                btn.disabled = false;
+                fileInput.value = '';
+            };
+
+            reader.onerror = function () {
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+                btn.innerText = "CSV 일괄 등록";
+                btn.disabled = false;
+            };
+
+            reader.readAsText(file, 'utf-8');
+        });
 
         window.addEventListener('adminDataLoaded', () => {
             window.renderVideoList();
