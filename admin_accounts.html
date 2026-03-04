@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>심사위원 계정 관리 - 관리자 패널</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="admin-container">
+    <main class="admin-main">
+        <header class="admin-header">
+            <div>
+                <span class="status-badge">System Active</span>
+                <h2>심사위원 계정 관리</h2>
+            </div>
+        </header>
+
+        <section class="admin-grid">
+            <!-- 계정 생성 섹션 -->
+            <div class="config-group">
+                <h4>신규 계정 생성</h4>
+                <div class="form-container">
+                    <label>심사위원 성함</label>
+                    <input type="text" id="newJudgeName" placeholder="홍길동">
+
+                    <label>심사위원 ID</label>
+                    <input type="text" id="newJudgeId" placeholder="judge_02">
+
+                    <label>패스워드 설정</label>
+                    <input type="text" id="newJudgePassword" placeholder="1234">
+
+                    <label style="margin-top: 10px; display: block;">심사 허용 대분류</label>
+                    <div id="categoryCheckboxes"
+                        style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px;">
+                        <label style="font-size: 0.85rem;"><input type="checkbox" value="integrated_marketing" checked>
+                            통합마케팅</label>
+                        <label style="font-size: 0.85rem;"><input type="checkbox" value="marketing_campaign" checked>
+                            마케팅/캠페인</label>
+                        <label style="font-size: 0.85rem;"><input type="checkbox" value="performance" checked>
+                            퍼포먼스</label>
+                        <label style="font-size: 0.85rem;"><input type="checkbox" value="digital_creative" checked> 디지털
+                            크리에이티브</label>
+                        <label style="font-size: 0.85rem;"><input type="checkbox" value="ai_creative" checked>
+                            AI크리에이티브</label>
+                    </div>
+
+                    <button class="btn primary" id="addAccountBtn" style="width: 100%;">계정 생성</button>
+                </div>
+            </div>
+
+            <!-- 계정 목록 섹션 -->
+            <div class="config-group">
+                <h4>등록된 계정 현황 (ID/PW 확인 가능)</h4>
+                <div style="overflow-x: auto;">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>성함</th>
+                                <th>아이디</th>
+                                <th>패스워드</th>
+                                <th>허용부문</th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="judgeListBody">
+                            <!-- JS dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 관리자 보안 설정 카드 -->
+        <div class="account-card" style="margin-top: 3rem; border-left: 5px solid var(--primary-color);">
+            <h3>🔒 관리자 보안 설정</h3>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">시스템 접속을 제한하는 관리자 전용 암호를
+                변경합니다.</p>
+            <div class="admin-grid" style="grid-template-columns: 1fr;">
+                <div class="config-group" style="background: rgba(0,0,0,0.02);">
+                    <label>현재 관리자 암호</label>
+                    <input type="password" id="currentAdminPass" placeholder="현재 암호">
+                    <label>새 관리자 암호</label>
+                    <input type="password" id="newAdminPass" placeholder="새 암호 입력">
+                    <label>새 암호 확인</label>
+                    <input type="password" id="confirmAdminPass" placeholder="확인을 위해 한 번 더 입력">
+                    <button class="btn primary" onclick="changeAdminPassword()"
+                        style="width: 100%; margin-top: 10px;">관리자 암호 저장</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="admin_common.js"></script>
+    <script type="module">
+        // 사이드바 및 데이터 로드
+        window.initAdminSidebar();
+
+        window.renderJudgeList = function () {
+            const body = document.getElementById('judgeListBody');
+            body.innerHTML = '';
+
+            window.currentAdminData.judges.forEach((j, index) => {
+                const row = document.createElement('tr');
+                const catCount = j.allowedMainCategories ? j.allowedMainCategories.length : 0;
+
+                row.innerHTML = `
+                    <td>${j.name}</td>
+                    <td><span class="account-id-pw">${j.id}</span></td>
+                    <td><span class="account-id-pw">${j.password}</span></td>
+                    <td style="font-size:0.8rem;">${catCount}개 부문</td>
+                    <td>
+                        <button class="btn secondary" style="padding: 4px 8px; font-size:0.7rem;" onclick="window.deleteJudge(${index})">삭제</button>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        document.getElementById('addAccountBtn').addEventListener('click', () => {
+            const name = document.getElementById('newJudgeName').value;
+            const id = document.getElementById('newJudgeId').value;
+            const pw = document.getElementById('newJudgePassword').value;
+
+            if (!name || !id || !pw) return alert('모든 정보를 입력해주세요.');
+
+            const allowed = [];
+            document.querySelectorAll('#categoryCheckboxes input:checked').forEach(cb => {
+                allowed.push(cb.value);
+            });
+
+            window.currentAdminData.judges.push({
+                id: id,
+                name: name,
+                password: pw,
+                allowedMainCategories: allowed
+            });
+
+            window.saveAdminData();
+            window.renderJudgeList();
+            alert('새 계정이 생성되었습니다.');
+
+            // 필드 초기화
+            document.getElementById('newJudgeName').value = '';
+            document.getElementById('newJudgeId').value = '';
+            document.getElementById('newJudgePassword').value = '';
+        });
+
+        window.deleteJudge = (index) => {
+            if (window.currentAdminData.judges.length <= 1) return alert('최소 1개의 관리 계정은 유지되어야 합니다.');
+            if (confirm('정말 이 계정을 삭제하시겠습니까?')) {
+                window.currentAdminData.judges.splice(index, 1);
+                window.saveAdminData();
+                window.renderJudgeList();
+            }
+        };
+
+        window.addEventListener('adminDataLoaded', () => {
+            window.renderJudgeList();
+        });
+
+        if (window.currentAdminData && window.currentAdminData.judges) {
+            window.renderJudgeList();
+        }
+
+        // 관리자 암호 변경 기능
+        function changeAdminPassword() {
+            const currentPass = document.getElementById('currentAdminPass').value;
+            const newPass = document.getElementById('newAdminPass').value;
+            const confirmPass = document.getElementById('confirmAdminPass').value;
+
+            const actualPass = localStorage.getItem('kodaf_admin_pass') || 'admin123';
+
+            if (currentPass !== actualPass) {
+                alert('현재 암호가 일치하지 않습니다.');
+                return;
+            }
+
+            if (!newPass || newPass.length < 4) {
+                alert('새 암호는 최소 4자 이상이어야 합니다.');
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                alert('새 암호와 확인 암호가 일치하지 않습니다.');
+                return;
+            }
+
+            if (confirm('관리자 암호를 변경하시겠습니까?\n변경 후 세션이 종료됩니다.')) {
+                localStorage.setItem('kodaf_admin_pass', newPass);
+                alert('관리자 암호가 성공적으로 변경되었습니다. 새로운 암호로 다시 접속해주세요.');
+                sessionStorage.removeItem('kodaf_admin_auth');
+                location.href = 'admin_login.html';
+            }
+        }
+    </script>
+</body>
+
+</html>

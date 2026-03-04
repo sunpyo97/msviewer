@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>보안 광고 심사 시스템 - 프로토타입</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="dark-theme">
+    <div class="watermark-container" id="watermark">
+        <!-- JS will populate dynamic watermark -->
+    </div>
+
+    <header class="top-bar"
+        style="background: rgba(255, 255, 255, 0.95); box-shadow: 0 1px 10px rgba(0,0,0,0.05); border-bottom: 1px solid var(--border-color);">
+        <div class="logo-box"
+            style="padding: 6px 16px; gap: 10px; background: white; border: 1px solid #eee; box-shadow: var(--shadow-sm);">
+            <img src="logo.png" alt="KODAF" style="height: 32px;">
+            <span style="font-weight: 800; color: #2d2d2d; font-size: 16px; letter-spacing: -1px;">2026</span>
+        </div>
+        <div class="system-info">
+            <span class="status-badge"
+                style="background: rgba(255, 59, 59, 0.08); color: #ff3b3b; border: 1px solid rgba(255, 59, 59, 0.15); font-weight: 700;">SECURE
+                CONNECTION</span>
+        </div>
+        <div class="user-profile">
+            <span class="user-name" style="color: var(--text-primary); font-weight: 600;">심사위원: 김광고</span>
+            <button class="logout-btn"
+                style="background: white; border: 1px solid #ddd; color: var(--text-secondary); padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">로그아웃</button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="viewer-section">
+            <div class="player-wrapper">
+                <video id="mainVideo" class="video-placeholder" controls
+                    style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+                <!-- 문서 뷰어 (PDF/PPT 구글 Preview) -->
+                <iframe id="documentViewer"
+                    style="display: none; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 10;"></iframe>
+                <!-- 투명 보안 레이어 (우클릭 및 요소 접근 차단) -->
+                <div class="video-secure-overlay"></div>
+                <div id="videoPlaceholder" class="video-placeholder">
+                    <div class="play-icon">▶</div>
+                    <p style="font-weight: 700; color: #fff;">보안 스트리밍 활성화됨</p>
+                    <div class="dynamic-overlay"
+                        style="background: rgba(255,59,59,0.2); color: #fff; font-weight: 700;">
+                        FOR AUTHORIZED JUDGE ONLY
+                    </div>
+                </div>
+                <div class="player-controls">
+                    <button class="ctrl-btn" id="playPauseBtn">PAUSE</button>
+                    <div class="progress-bar">
+                        <div class="progress"></div>
+                    </div>
+                    <span class="time" id="videoTime">00:00 / 00:00</span>
+                </div>
+            </div>
+
+            <!-- 다중 영상(시리즈) 탭 영역 -->
+            <div id="playlistTabs" class="playlist-tabs"></div>
+            <div class="work-info">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2 id="currentVideoTitle">디지털 광고 부문 - "The Future of AI"</h2>
+                    <select id="videoSelect"
+                        style="width: auto; margin-top: 0; background: #ffffff; color: #000000; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-weight: 600;">
+                        <!-- JS dynamic -->
+                    </select>
+                </div>
+                <p id="currentVideoInfo">출품번호: AD-2026-0042 | 출품사: (주)혁신광고</p>
+            </div>
+        </section>
+
+        <section class="scoring-section">
+            <div class="score-card glass">
+                <h3>심사 배점표</h3>
+                <div class="category-selector" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label>대분류</label>
+                        <select id="mainCategorySelect">
+                            <!-- JS dynamic -->
+                        </select>
+                    </div>
+                    <div>
+                        <label>소분류</label>
+                        <select id="subCategorySelect">
+                            <!-- JS dynamic -->
+                        </select>
+                    </div>
+                </div>
+
+                <div id="judgingFields" class="fields-container">
+                    <!-- Dynamic fields here -->
+                </div>
+
+                <div class="comment-section" style="margin-top: 1.5rem;">
+                    <label
+                        style="display: block; font-size: 0.9rem; color: #000000; margin-bottom: 8px; font-weight: 700;">심사평
+                        (접수 의견)</label>
+                    <textarea id="judgeComment" placeholder="심사평을 입력하세요 (예: 보완 필요, 우수함 등)"
+                        style="width: 100%; height: 100px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; color: #000000; padding: 12px; font-size: 0.95rem; resize: none;"></textarea>
+                </div>
+
+                <div class="total-score">
+                    <span>최종 합계</span>
+                    <span id="totalValue">0</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn secondary">임시 저장</button>
+                    <button class="btn primary">최종 제출</button>
+                </div>
+
+                <p class="security-note">※ 최종 제출 후에는 점수 수정이 불가능하며, 모든 활동은 보안 로그에 기록됩니다.</p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="video-db.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>

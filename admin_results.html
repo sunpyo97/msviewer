@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>심사 결과 대시보드 - 관리자 패널</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="admin-container">
+    <main class="admin-main">
+        <header class="admin-header">
+            <div>
+                <span class="status-badge">Real-time Data</span>
+                <h2>심사 결과 대시보드</h2>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn secondary" id="clearResultsBtn" style="font-size:0.85rem;">결과 초기화</button>
+                <button class="btn primary" id="exportExcelBtn" style="font-size:0.85rem;">엑셀 내보내기</button>
+            </div>
+        </header>
+
+        <section class="config-group" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+            <div
+                style="overflow-x: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: var(--shadow-sm);">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>시간</th>
+                            <th>심사위원</th>
+                            <th>영상정보</th>
+                            <th>전략성</th>
+                            <th>기술성</th>
+                            <th>예술성</th>
+                            <th>전달력</th>
+                            <th>대중성</th>
+                            <th>심사평</th>
+                            <th>총점</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboardBody">
+                        <!-- JS dynamic -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="admin_common.js"></script>
+    <script type="module">
+        window.initAdminSidebar();
+
+        window.renderDashboard = function () {
+            const body = document.getElementById('dashboardBody');
+            body.innerHTML = '';
+
+            if (window.currentAdminData.results.length === 0) {
+                body.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 3rem; color:var(--text-secondary);">심사 결과 데이터를 기다리는 중입니다...</td></tr>`;
+                return;
+            }
+
+            window.currentAdminData.results.forEach(res => {
+                const row = document.createElement('tr');
+                const mainName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
+                const subName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
+                const s = res.scores || {};
+
+                row.innerHTML = `
+                    <td style="font-size:0.75rem;">${new Date(res.timestamp).toLocaleTimeString()}</td>
+                    <td>${res.judgeName}</td>
+                    <td style="font-size:0.75rem;">[${mainName}>${subName}] ${res.videoTitle}</td>
+                    <td>${s.strategic || 0}</td>
+                    <td>${s.technical || 0}</td>
+                    <td>${s.artistic || 0}</td>
+                    <td>${s.delivery || 0}</td>
+                    <td>${s.performance || 0}</td>
+                    <td style="font-size:0.75rem; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${res.comment || '-'}</td>
+                    <td style="color:var(--primary-color); font-weight:bold;">${res.total}</td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        document.getElementById('exportExcelBtn').addEventListener('click', () => {
+            if (window.currentAdminData.results.length === 0) return alert('데이터가 없습니다.');
+
+            let csv = "\uFEFF일시,심사위원ID,심사위원성함,대분류,소분류,영상번호,영상제목,전략성,기술성,예술성,메시지전달력,성과대중성,심사평,총합\n";
+            window.currentAdminData.results.forEach(res => {
+                const s = res.scores || {};
+                const row = [
+                    res.timestamp, res.judgeId, res.judgeName,
+                    JUDGING_SCHEMA[res.mainCat]?.name, JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name,
+                    res.videoId, res.videoTitle,
+                    s.strategic, s.technical, s.artistic, s.delivery, s.performance,
+                    `"${res.comment || ''}"`, res.total
+                ].join(',');
+                csv += row + "\n";
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Judge_Results_${new Date().getTime()}.csv`;
+            link.click();
+        });
+
+        document.getElementById('clearResultsBtn').addEventListener('click', () => {
+            if (confirm('모든 결과를 초기화하시겠습니까?')) {
+                window.currentAdminData.results = [];
+                window.saveAdminData();
+                window.renderDashboard();
+            }
+        });
+
+        window.addEventListener('adminDataLoaded', () => {
+            window.renderDashboard();
+        });
+
+        if (window.currentAdminData && window.currentAdminData.results) {
+            window.renderDashboard();
+        }
+    </script>
+</body>
+
+</html>

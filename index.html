@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KODAF 2026 - Korea Online Digital Advertising Festival</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;800&family=Noto+Sans+KR:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: url('https://www.transparenttextures.com/patterns/white-diamond.png');
+            opacity: 0.1;
+            animation: rotateBG 100s linear infinite;
+        }
+
+        @keyframes rotateBG {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.2s backwards;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 20px;
+            animation: fadeInUp 1s ease-out 0.4s backwards;
+        }
+
+        .cta-btn {
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .cta-btn.primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .cta-btn.primary:hover {
+            transform: translateY(-5px);
+            background: var(--primary-hover);
+            box-shadow: 0 15px 40px rgba(255, 59, 59, 0.3);
+        }
+
+        .cta-btn.secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .cta-btn.secondary:hover {
+            transform: translateY(-5px);
+            background: #f8fafc;
+            border-color: var(--primary-color);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .floating-bg {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: var(--primary-color);
+            filter: blur(180px);
+            opacity: 0.05;
+            z-index: 0;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .bg-1 {
+            top: -150px;
+            left: -150px;
+            animation: float 15s infinite alternate;
+        }
+
+        .bg-2 {
+            bottom: -150px;
+            right: -150px;
+            animation: float 20s infinite alternate-reverse;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(100px, 50px);
+            }
+        }
+    </style>
+</head>
+
+<body class="dark-theme">
+    <div class="floating-bg bg-1"></div>
+    <div class="floating-bg bg-2"></div>
+
+    <section class="hero">
+        <div class="logo-box"
+            style="margin-bottom: 2.5rem; animation: fadeInUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); transform: scale(1.1); padding: 24px 48px; border-radius: 28px; background: white; box-shadow: var(--shadow-md); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; gap: 20px;">
+            <span
+                style="font-size: 4rem; font-weight: 800; color: #2d2d2d; letter-spacing: -3px; line-height: 1;">2026</span>
+            <img src="logo.png" alt="KODAF Logo" style="height: 100px; object-fit: contain;">
+        </div>
+        <p class="hero-subtitle">Korea Digital Advertising Festival</p>
+
+        <div class="cta-group">
+            <a href="login.html" class="cta-btn primary">심사 시스템 접속</a>
+            <a href="admin_accounts.html" class="cta-btn secondary">관리자 콘솔</a>
+        </div>
+    </section>
+
+    <!-- KODAF Info (Optional) -->
+    <footer
+        style="position: absolute; bottom: 30px; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;">
+        &copy; 2026 Korea Online Digital Advertising Festival. <span
+            style="color: var(--primary-color); margin-left: 10px;">Secure Judging System</span>
+    </footer>
+</body>
+
+</html>

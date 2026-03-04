@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KODAF 2026 - Admin Access</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Noto+Sans+KR:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow-md);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .logo-small {
+            height: 40px;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .error-msg {
+            color: var(--primary-color);
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="dark-theme">
+    <div class="login-card">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 2rem;">
+            <span style="font-weight: 800; font-size: 24px;">2026</span>
+            <img src="logo.png" alt="KODAF" class="logo-small" style="margin-bottom: 0;">
+        </div>
+        <h2>관리자 보안 인증</h2>
+        <div class="field">
+            <label for="adminPass">관리자 암호를 입력하세요</label>
+            <input type="password" id="adminPass" placeholder="••••••••">
+        </div>
+        <div id="errorMsg" class="error-msg">암표가 일치하지 않습니다.</div>
+        <button class="btn primary" id="accessBtn" style="width: 100%; margin-top: 1.5rem;">접속하기</button>
+        <a href="index.html"
+            style="display: block; margin-top: 1.5rem; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;">홈으로
+            돌아가기</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const accessBtn = document.getElementById('accessBtn');
+            const adminPassInput = document.getElementById('adminPass');
+            const errorMsg = document.getElementById('errorMsg');
+
+            accessBtn.addEventListener('click', () => {
+                const enteredPass = adminPassInput.value;
+                const actualPass = localStorage.getItem('kodaf_admin_pass') || 'admin123';
+
+                if (enteredPass === actualPass) {
+                    sessionStorage.setItem('kodaf_admin_auth', 'true');
+                    const redirectUrl = localStorage.getItem('admin_redirect_url') || 'admin_accounts.html';
+                    location.href = redirectUrl;
+                } else {
+                    errorMsg.style.display = 'block';
+                    adminPassInput.style.borderColor = 'var(--primary-color)';
+                }
+            });
+
+            adminPassInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') accessBtn.click();
+            });
+        });
+    </script>
+</body>
+
+</html>
