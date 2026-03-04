@@ -15,46 +15,40 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
     try {
         const dbRef = window.firebaseRef(window.firebaseDB);
-        const snapshot = await window.firebaseGet(window.firebaseChild(dbRef, 'adminData'));
+        const judgesRef = window.firebaseChild(dbRef, 'adminData/judges');
+        const snapshot = await window.firebaseGet(judgesRef);
+
+        const normalizedId = id.trim();
 
         if (snapshot.exists()) {
-            const adminData = snapshot.val();
+            const judgesData = snapshot.val();
+            const judgesList = Array.isArray(judgesData) ? judgesData : Object.values(judgesData);
 
-            // 1. 단일 계정 (하위 호환)
-            if (adminData.judgeId === id && adminData.password === pw) {
+            // ID와 PW 모두 일치하는 심사위원 검색
+            const judge = judgesList.find(j =>
+                j && (j.id === normalizedId || j.ID === normalizedId) && j.password === pw
+            );
+
+            if (judge) {
+                proceedLogin(judge);
+                return;
+            }
+        }
+
+        // 단일 계정 백업 체크 (adminData 최상위에 있을 경우)
+        const rootSnapshot = await window.firebaseGet(window.firebaseChild(dbRef, 'adminData'));
+        if (rootSnapshot.exists()) {
+            const adminData = rootSnapshot.val();
+            if ((adminData.judgeId === normalizedId || adminData.judgeID === normalizedId) && adminData.password === pw) {
                 proceedLogin({
-                    id: adminData.judgeId,
+                    id: adminData.judgeId || adminData.judgeID,
                     name: adminData.judgeName || "심사위원",
                     allowedMainCategories: adminData.allowedMainCategories || []
                 });
                 return;
             }
-
-            // 2. 계정 목록 확인 (배열/객체 형식 호환)
-            if (adminData.judges) {
-                const judgesList = Array.isArray(adminData.judges)
-                    ? adminData.judges
-                    : Object.values(adminData.judges);
-
-                const judge = judgesList.find(j => j.id === id && j.password === pw);
-                if (judge) {
-                    proceedLogin(judge);
-                    return;
-                }
-            }
         }
 
-        // 3. Fallback (초기 테스트용 데모 계정)
-        if (id === 'judge_01' && pw === 'password123') {
-            proceedLogin({
-                id: "judge_01",
-                name: "김광고",
-                allowedMainCategories: ["integrated_marketing", "marketing_campaign", "performance", "digital_creative", "ai_creative"]
-            });
-            return;
-        }
-
-        // 권한 없음
         errorMsg.innerText = 'ID 또는 패스워드가 올바르지 않습니다.';
         errorMsg.style.display = 'block';
 
@@ -70,9 +64,9 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
 function proceedLogin(judge) {
     sessionStorage.setItem('JUDGE_SESSION', JSON.stringify({
-        id: judge.id,
-        name: judge.name,
-        allowedMainCategories: judge.allowedMainCategories
+        id: judge.id || judge.ID,
+        name: judge.name || judge.Name || "심사위원",
+        allowedMainCategories: judge.allowedMainCategories || []
     }));
     window.location.href = 'judging.html';
 }
