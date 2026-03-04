@@ -255,14 +255,16 @@
                 const response = await fetch(apiUrl);
 
                 if (!response.ok) {
-                    throw new Error(`API 호출 에러: ${response.status} ${response.statusText}`);
+                    const errorText = await response.text();
+                    console.error("API 응답 에러:", errorText);
+                    throw new Error(`[${response.status}] API 호출 에러 - 상세내용은 개발자 도구를 확인하세요.`);
                 }
 
                 const data = await response.json();
                 const files = data.files || [];
 
                 if (files.length === 0) {
-                    alert('폴더가 비어있거나 접근 권한이 없습니다. (링크가 있는 모든 사용자 공개 설정 확인)');
+                    alert(`스캔 결과: 폴더가 비어있거나 접근 권한이 없습니다.\n(해당 폴더의 공유 설정을 '링크가 있는 모든 사용자 공개'로 설정했는지 확인하세요.)`);
                     btn.innerText = "폴더 스캔";
                     btn.disabled = false;
                     return;
@@ -278,22 +280,21 @@
                     const mimeType = file.mimeType;
                     const id = file.id;
 
-                    if (mimeType.includes('video/') || name.includes('.mp4') || name.includes('.mov')) {
+                    if (mimeType.includes('video/') || name.includes('.mp4') || name.includes('.mov') || name.includes('.avi')) {
                         scannedFolderIds.videoIds.push(id);
                         videoNames.push(file.name);
-                    } else if (name.includes('신청') || name.includes('form')) {
+                    } else if (name.includes('신청') || name.includes('form') || name.includes('app')) {
                         scannedFolderIds.appFormId = id;
                         appName = file.name;
-                    } else if (name.includes('설명') || name.includes('desc') || name.includes('보충')) {
+                    } else if (name.includes('설명') || name.includes('desc') || name.includes('보충') || name.includes('자료')) {
                         scannedFolderIds.addDescId = id;
                         descName = file.name;
-                    } else if ((mimeType.includes('pdf') || mimeType.includes('presentation')) && scannedFolderIds.videoIds.length === 0 && !scannedFolderIds.appFormId) {
+                    } else if ((mimeType.includes('pdf') || mimeType.includes('presentation') || name.includes('.pdf') || name.includes('.ppt')) && scannedFolderIds.videoIds.length === 0 && !scannedFolderIds.appFormId) {
                         // 영상이 단 1개도 없고 첫 문서면 이걸 '문서 부문'의 메인작품으로 푸시
                         scannedFolderIds.videoIds.push(id);
                         videoNames.push(file.name);
                     }
                 });
-
                 // UI 피드백 표시
                 document.getElementById('scanResVideo').innerHTML = `🎬 본편: <span style="font-weight:bold; color:#000;">${videoNames.length > 0 ? videoNames.join(', ') : '없음'}</span>`;
                 document.getElementById('scanResApp').innerHTML = `📄 신청서: <span style="font-weight:bold; color:#000;">${appName}</span>`;
