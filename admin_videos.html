@@ -77,10 +77,17 @@
                         </label>
                         <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
                             <input type="radio" name="uploadType" value="drive" onchange="toggleUploadType(this.value)">
-                            구글 드라이브
+                            개별 구글 드라이브 링크
+                        </label>
+                        <label
+                            style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px; color: #10b981; font-weight: bold;">
+                            <input type="radio" name="uploadType" value="folder"
+                                onchange="toggleUploadType(this.value)">
+                            ⚡ 구글 드라이브 폴더 일괄 스캔
                         </label>
                     </div>
 
+                    <!-- 1. 로컬 파일 업로드 -->
                     <div id="fileUploadGroup">
                         <label style="margin-top:10px; display:block;">[1] 작품 파일 (시리즈일 경우 다중 선택)</label>
                         <input type="file" id="vFile" accept="video/*,.ppt,.pptx,.pdf" multiple
@@ -93,6 +100,7 @@
                         <input type="file" id="vFileAddDesc" accept=".pdf,.ppt,.pptx" style="margin-bottom: 20px;">
                     </div>
 
+                    <!-- 2. 개별 드라이브 구룹 -->
                     <div id="driveUploadGroup" style="display: none;">
                         <label style="margin-top:10px; display:block;">[1] 작품 본편 드라이브 링크 (다중 등록 시 콤마 구분)</label>
                         <input type="text" id="vDriveId" placeholder="예: https://drive.google.com/file/d/... 또는 ID만 입력"
@@ -111,6 +119,30 @@
                             * 시리즈 부문 본편 영상 여러 개 입력 시 구글 드라이브 링크들을 쉼표(,)로 이어서 입력하세요.<br>
                             * PPT 파일은 웹 뷰어 호환성이 좋으므로 로컬 첨부보다 '구글 드라이브 링크' 등록을 적극 권장합니다.
                         </p>
+                    </div>
+
+                    <!-- 3. 단일 폴더 자동차 스캔 폼 (프론트엔드 API 방식) -->
+                    <div id="folderUploadGroup"
+                        style="display: none; background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #10b981; margin-bottom: 20px;">
+                        <label style="display:block; color: #10b981; font-weight: bold;">[자동화] 출품작 구글 드라이브 폴더 링크 하나만
+                            입력</label>
+                        <div style="display: flex; gap: 10px; margin-top: 5px;">
+                            <input type="text" id="vFolderUrl"
+                                placeholder="예: https://drive.google.com/drive/folders/..." style="flex: 1;">
+                            <button class="btn primary" id="scanFolderBtn"
+                                style="background: #10b981; border: none; white-space: nowrap;">폴더 스캔</button>
+                        </div>
+
+                        <div id="scanResultBox" style="margin-top: 15px; font-size: 0.85rem; display: none;">
+                            <strong style="display:block; margin-bottom:5px;">스캔된 매핑 결과:</strong>
+                            <div style="background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                                <div id="scanResVideo" style="color: #3b82f6;">🎬 본편: <span class="val">없음</span></div>
+                                <div id="scanResApp" style="color: #10b981;">📄 신청서: <span class="val">없음</span></div>
+                                <div id="scanResDesc" style="color: #8b5cf6;">📄 추가설명: <span class="val">없음</span></div>
+                            </div>
+                            <p style="font-size: 0.7rem; color: #666; margin-top: 5px;">* 확인 후 아래 [영상 등록] 버튼을 누르시면 이
+                                결과대로 자동 부여됩니다.</p>
+                        </div>
                     </div>
 
                     <button class="btn primary" id="addVideoBtn" style="width: 100%;">영상 등록</button>
@@ -152,6 +184,14 @@
         window.toggleUploadType = function (type) {
             document.getElementById('fileUploadGroup').style.display = type === 'file' ? 'block' : 'none';
             document.getElementById('driveUploadGroup').style.display = type === 'drive' ? 'block' : 'none';
+            document.getElementById('folderUploadGroup').style.display = type === 'folder' ? 'block' : 'none';
+        };
+
+        // 전역 상태 변수: 폴더 스캔으로 찾은 ID 임시 보관
+        let scannedFolderIds = {
+            videoIds: [],
+            appFormId: null,
+            addDescId: null
         };
 
         window.renderVideoList = function () {
@@ -187,6 +227,90 @@
             });
         }
 
+        // ================= 단일 폴더 스캔 로직 (Google Drive API) =================
+        // 주의: 이 기능을 실제 사용하려면 반드시 유효한 Google Cloud API Key를 아래에 입력해야 합니다.
+        const GOOGLE_API_KEY = "PLEASE_ENTER_YOUR_API_KEY_HERE";
+
+        document.getElementById('scanFolderBtn').addEventListener('click', async (e) => {
+            e.preventDefault(); // 기본 서밋 방지
+            const folderUrl = document.getElementById('vFolderUrl').value.trim();
+            if (!folderUrl) return alert('폴더 공유 링크를 입력해주세요.');
+
+            // 폴더 ID 추출 로직
+            const match = folderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/) || folderUrl.match(/id=([a-zA-Z0-9_-]+)/);
+            const folderId = match ? match[1] : folderUrl; // 링크 형태가 아니면 ID 자체로 간주
+
+            if (!folderId) return alert('유효한 폴더 링크가 아닙니다.');
+            if (GOOGLE_API_KEY === "PLEASE_ENTER_YOUR_API_KEY_HERE") {
+                return alert('Google API Key가 설정되지 않았습니다. 소스 코드에서 API 키를 먼저 입력해주세요.');
+            }
+
+            const btn = document.getElementById('scanFolderBtn');
+            btn.innerText = "스캔 중...";
+            btn.disabled = true;
+
+            try {
+                // 구글 드라이브 API 호출: 폴더 내 파일 목록 가져오기
+                const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`API 호출 에러: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const files = data.files || [];
+
+                if (files.length === 0) {
+                    alert('폴더가 비어있거나 접근 권한이 없습니다. (링크가 있는 모든 사용자 공개 설정 확인)');
+                    btn.innerText = "폴더 스캔";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 매핑 초기화
+                scannedFolderIds = { videoIds: [], appFormId: null, addDescId: null };
+                let videoNames = [], appName = '없음', descName = '없음';
+
+                // 파일 분류 로직
+                files.forEach(file => {
+                    const name = file.name.toLowerCase();
+                    const mimeType = file.mimeType;
+                    const id = file.id;
+
+                    if (mimeType.includes('video/') || name.includes('.mp4') || name.includes('.mov')) {
+                        scannedFolderIds.videoIds.push(id);
+                        videoNames.push(file.name);
+                    } else if (name.includes('신청') || name.includes('form')) {
+                        scannedFolderIds.appFormId = id;
+                        appName = file.name;
+                    } else if (name.includes('설명') || name.includes('desc') || name.includes('보충')) {
+                        scannedFolderIds.addDescId = id;
+                        descName = file.name;
+                    } else if ((mimeType.includes('pdf') || mimeType.includes('presentation')) && scannedFolderIds.videoIds.length === 0 && !scannedFolderIds.appFormId) {
+                        // 영상이 단 1개도 없고 첫 문서면 이걸 '문서 부문'의 메인작품으로 푸시
+                        scannedFolderIds.videoIds.push(id);
+                        videoNames.push(file.name);
+                    }
+                });
+
+                // UI 피드백 표시
+                document.getElementById('scanResVideo').innerHTML = `🎬 본편: <span style="font-weight:bold; color:#000;">${videoNames.length > 0 ? videoNames.join(', ') : '없음'}</span>`;
+                document.getElementById('scanResApp').innerHTML = `📄 신청서: <span style="font-weight:bold; color:#000;">${appName}</span>`;
+                document.getElementById('scanResDesc').innerHTML = `📄 추가설명: <span style="font-weight:bold; color:#000;">${descName}</span>`;
+
+                document.getElementById('scanResultBox').style.display = 'block';
+
+            } catch (err) {
+                console.error("폴더 스캔 실패:", err);
+                alert('폴더 스캔 중 오류가 발생했습니다. 개발자 도구를 확인해주세요.');
+            } finally {
+                btn.innerText = "폴더 스캔";
+                btn.disabled = false;
+            }
+        });
+
+        // ================= 영상 등록 등록 =================
         document.getElementById('addVideoBtn').addEventListener('click', async () => {
             const vId = document.getElementById('vId').value;
             const vTitle = document.getElementById('vTitle').value;
@@ -220,8 +344,20 @@
 
             // 구글 드라이브 다중 ID 파싱 (본편만 다중 지원)
             let parsedDriveIds = [];
-            if (uploadType === 'drive' && vDriveIdInput) {
+            let finalAppFormDriveId = null;
+            let finalAddDescDriveId = null;
+
+            if (uploadType === 'folder') {
+                if (scannedFolderIds.videoIds.length === 0 && !scannedFolderIds.appFormId) {
+                    return alert('폴더가 아직 스캔되지 않았거나 폴더 내에 유효한 파일이 없습니다. [폴더 스캔]을 먼저 실행해주세요.');
+                }
+                parsedDriveIds = scannedFolderIds.videoIds;
+                finalAppFormDriveId = scannedFolderIds.appFormId;
+                finalAddDescDriveId = scannedFolderIds.addDescId;
+            } else if (uploadType === 'drive' && vDriveIdInput) {
                 parsedDriveIds = vDriveIdInput.split(',').map(id => extractDriveId(id.trim())).filter(id => id.length > 0);
+                finalAppFormDriveId = extractDriveId(vDriveAppForm);
+                finalAddDescDriveId = extractDriveId(vDriveAddDesc);
             }
 
             const btn = document.getElementById('addVideoBtn');
@@ -234,13 +370,13 @@
                 mainType: mainType,
                 hasFile: uploadType === 'file' && vFiles.length > 0,
                 fileCount: uploadType === 'file' ? vFiles.length : 0,
-                driveIds: parsedDriveIds, // 단일 문자열 대신 배열로 저장
+                driveIds: parsedDriveIds, // 배열 (항상)
                 // 신청서 메타
                 appFormHasFile: uploadType === 'file' && !!vFileAppForm,
-                appFormDriveId: uploadType === 'drive' ? extractDriveId(vDriveAppForm) : null,
+                appFormDriveId: finalAppFormDriveId,
                 // 추가설명서 메타
                 addDescHasFile: uploadType === 'file' && !!vFileAddDesc,
-                addDescDriveId: uploadType === 'drive' ? extractDriveId(vDriveAddDesc) : null
+                addDescDriveId: finalAddDescDriveId
             };
 
             try {
