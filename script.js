@@ -295,6 +295,17 @@ if (currentJudge) {
             }
             playSource(video.driveIds[0], false, isDocType);
         } else if (video.driveId) {
+            if (playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
+                const btnMain = document.createElement('button');
+                btnMain.className = 'series-btn active';
+                btnMain.innerText = isDocType ? '📄 메인 문서' : '🎬 메인 작품';
+                btnMain.onclick = () => {
+                    document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
+                    btnMain.classList.add('active');
+                    playSource(video.driveId, false, isDocType);
+                };
+                playlistContainer.appendChild(btnMain);
+            }
             playSource(video.driveId, false, isDocType);
         } else if (video.hasFile) {
             try {
@@ -314,6 +325,16 @@ if (currentJudge) {
                             };
                             playlistContainer.appendChild(btn);
                         });
+                    } else if (playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
+                        const btnMain = document.createElement('button');
+                        btnMain.className = 'series-btn active';
+                        btnMain.innerText = video.mainType === 'doc' ? '📄 메인 문서' : '🎬 메인 작품';
+                        btnMain.onclick = () => {
+                            document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
+                            btnMain.classList.add('active');
+                            playSource(null, URL.createObjectURL(files[0]), video.mainType === 'doc');
+                        };
+                        playlistContainer.appendChild(btnMain);
                     }
                     playSource(null, URL.createObjectURL(files[0]), video.mainType === 'doc');
                 }
