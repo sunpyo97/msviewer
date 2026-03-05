@@ -279,32 +279,42 @@ if (currentJudge) {
         };
 
         const isDocType = video.mainType === 'doc';
-        if (video.driveIds && video.driveIds.length > 0) {
-            if (video.driveIds.length > 1 && playlistContainer) {
-                video.driveIds.forEach((id, idx) => {
+
+        // 새로운 트리 구조(seriesData) 우대, 없으면 기존 driveIds 사용
+        const seriesItems = video.seriesData || (video.driveIds || []).map((id, idx) => ({
+            id: id,
+            name: `시리즈 ${idx + 1}`,
+            folderName: '',
+            type: isDocType ? 'doc' : 'video'
+        }));
+
+        if (seriesItems.length > 0 && playlistContainer) {
+            // 탭이 1개이고 다른 부가 문서(신청서 등)가 있는 경우에도 탭을 보여줌
+            const showForceTab = seriesItems.length === 1 && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile);
+
+            if (seriesItems.length > 1 || showForceTab) {
+                seriesItems.forEach((item, idx) => {
                     const btn = document.createElement('button');
                     btn.className = `series-btn ${idx === 0 ? 'active' : ''}`;
-                    btn.innerText = `시리즈 ${idx + 1}`;
+
+                    // 폴더명이 있으면 [폴더명] 파일명, 없으면 파일명
+                    const label = item.folderName ? `📁 ${item.folderName}` : (item.name || `시리즈 ${idx + 1}`);
+                    btn.innerText = label;
+                    btn.title = item.name; // 전체 이름은 툴팁으로
+
                     btn.onclick = () => {
                         document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
-                        playSource(id, false, isDocType);
+                        playSource(item.id, null, item.type === 'doc');
                     };
                     playlistContainer.appendChild(btn);
                 });
-            } else if (video.driveIds.length === 1 && playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
-                const btnMain = document.createElement('button');
-                btnMain.className = 'series-btn active';
-                btnMain.innerText = isDocType ? '📄 메인 문서' : '🎬 메인 작품';
-                btnMain.onclick = () => {
-                    document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
-                    btnMain.classList.add('active');
-                    playSource(video.driveIds[0], false, isDocType);
-                };
-                playlistContainer.appendChild(btnMain);
             }
-            playSource(video.driveIds[0], false, isDocType);
+            // 첫 번째 아이템 즉시 재생
+            const first = seriesItems[0];
+            playSource(first.id, null, first.type === 'doc');
         } else if (video.driveId) {
+            // 완전 구형 단건 데이터 호환성
             if (playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
                 const btnMain = document.createElement('button');
                 btnMain.className = 'series-btn active';
@@ -317,7 +327,8 @@ if (currentJudge) {
                 playlistContainer.appendChild(btnMain);
             }
             playSource(video.driveId, false, isDocType);
-        } else if (video.hasFile) {
+        }
+        else if (video.hasFile) {
             try {
                 const fileData = await getVideoFile(video.id);
                 if (fileData) {
