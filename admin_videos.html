@@ -175,6 +175,35 @@
         </section>
     </main>
 
+    <!-- 파일 관리 모달 -->
+    <div id="fileManagerModal" class="modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+        <div class="modal-content"
+            style="background:white; padding:25px; border-radius:12px; width:90%; max-width:700px; max-height:80vh; overflow-y:auto; position:relative;">
+            <button onclick="closeFileManager()"
+                style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3>📁 개별 파일 상세 관리</h3>
+            <p id="fmVideoTitle" style="font-weight:bold; color:var(--primary-color); margin-bottom:15px;"></p>
+
+            <table class="results-table" style="font-size:0.85rem;">
+                <thead>
+                    <tr>
+                        <th>유형</th>
+                        <th>이름(폴더)</th>
+                        <th>드라이브 ID/링크</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="fmFileListBody"></tbody>
+            </table>
+
+            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn secondary" onclick="closeFileManager()">닫기</button>
+                <button class="btn primary" onclick="saveFileChanges()">변경사항 저장</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="admin_common.js"></script>
     <script type="module">
@@ -205,14 +234,15 @@
                 const subName = JUDGING_SCHEMA[v.mainCat]?.sub[v.subCat]?.name || v.subCat;
 
                 let fileStatus = '';
-                if (v.driveIds && v.driveIds.length > 0) {
-                    fileStatus = `<span class="status-badge" style="background:rgba(59,130,246,0.1); color:#3b82f6; border:none;">Drive (${v.driveIds.length}개)</span>`;
-                } else if (v.driveId) { // 하위 호환성
-                    fileStatus = `<span class="status-badge" style="background:rgba(59,130,246,0.1); color:#3b82f6; border:none;">Drive</span>`;
+                const itemsCount = v.seriesData ? v.seriesData.length : (v.driveIds ? v.driveIds.length : (v.hasFile ? v.fileCount : 0));
+
+                if (v.seriesData || v.driveIds || v.driveId) {
+                    fileStatus = `<button class="btn secondary" style="padding: 2px 6px; font-size:0.7rem; background:rgba(59,130,246,0.1); color:#3b82f6; border:1px solid #3b82f6;" onclick="window.openFileManager(${index})">
+                        Manage (${itemsCount}개)
+                    </button>`;
                 } else {
-                    const countTxt = (v.fileCount && v.fileCount > 1) ? ` (${v.fileCount}개)` : '';
                     fileStatus = `<span class="status-badge" style="background:${v.hasFile ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'}; color:${v.hasFile ? '#10b981' : '#ef4444'}; border:none;">
-                        ${v.hasFile ? 'Stored' + countTxt : 'No File'}</span>`;
+                        ${v.hasFile ? 'Stored' : 'No File'}</span>`;
                 }
 
                 row.innerHTML = `
@@ -254,8 +284,8 @@
                 scannedAppFormId = null;
                 scannedAddDescId = null;
 
-                // 1단계 하위 항목들을 시발점으로 스캔
-                async function scanTopLevel(targetFolderId) {
+                // 1단계 하위 항목들을 시발점으로 스캔 + 폴더인 경우 자식들까지 스캔
+                async function scanRecursiveWithChildren(targetFolderId) {
                     const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
                     const response = await fetch(apiUrl);
                     if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`);
@@ -268,8 +298,19 @@
                         const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
 
                         if (isFolder) {
-                            // 1단계 폴더면 그 자체를 'folder' 타입 탭으로 등록
-                            scannedSeriesData.push({ id: id, name: file.name, folderName: file.name, type: 'folder' });
+                            // 폴더의 자식들도 스캔
+                            const childrenApiUrl = `https://www.googleapis.com/drive/v3/files?q='${id}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
+                            const childRes = await fetch(childrenApiUrl);
+                            const childData = await childRes.json();
+                            const children = (childData.files || []).map(c => {
+                                const cLower = c.name.toLowerCase();
+                                let cType = 'doc';
+                                if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
+                                else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png')) cType = 'image';
+                                return { id: c.id, name: c.name, type: cType };
+                            });
+
+                            scannedSeriesData.push({ id: id, name: file.name, folderName: file.name, type: 'folder', children: children });
                         } else {
                             // 파일 분류
                             if (file.mimeType.includes('video/') || nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi')) {
@@ -287,7 +328,7 @@
                     }
                 }
 
-                await scanTopLevel(folderId);
+                await scanRecursiveWithChildren(folderId);
 
                 if (scannedSeriesData.length === 0 && !scannedAppFormId) {
                     alert('유효한 파일을 찾지 못했습니다.');
@@ -408,6 +449,81 @@
             document.getElementById('vDriveIdAppForm').value = '';
             document.getElementById('vDriveIdAddDesc').value = '';
         });
+
+        let currentEditingVideoIndex = -1;
+        let tempSeriesData = [];
+
+        window.openFileManager = (index) => {
+            currentEditingVideoIndex = index;
+            const v = window.currentAdminData.videos[index];
+            document.getElementById('fmVideoTitle').innerText = `${v.id} - ${v.title}`;
+
+            // 기존 driveIds만 있고 seriesData가 없는 구형 데이터 호환 처리
+            tempSeriesData = v.seriesData ? JSON.parse(JSON.stringify(v.seriesData)) :
+                (v.driveIds || []).map(id => ({ id: id, name: '시리즈 작품', folderName: '', type: v.mainType || 'video' }));
+
+            renderFileManagerList();
+            document.getElementById('fileManagerModal').style.display = 'flex';
+        };
+
+        function renderFileManagerList() {
+            const body = document.getElementById('fmFileListBody');
+            body.innerHTML = '';
+
+            tempSeriesData.forEach((item, idx) => {
+                const row = document.createElement('tr');
+                const icon = item.type === 'folder' ? '📁' : (item.type === 'video' ? '🎬' : '📄');
+
+                row.innerHTML = `
+                    <td>${icon} ${item.type}</td>
+                    <td><input type="text" value="${item.name}" onchange="updateTempItem(${idx}, 'name', this.value)" style="width:100%; font-size:0.8rem;"></td>
+                    <td><input type="text" value="${item.id}" onchange="updateTempItem(${idx}, 'id', this.value)" style="width:100%; font-size:0.8rem;"></td>
+                    <td>
+                        <button class="btn secondary" style="padding:2px 5px; font-size:0.7rem; background:#fee2e2; color:#ef4444; border:none;" onclick="deleteTempItem(${idx})">삭제</button>
+                    </td>
+                `;
+                body.appendChild(row);
+
+                // 폴더인 경우 자식 노드들도 표시 (수정/삭제는 부모 단위로만 일단 구현 - 자식은 스캔 결과물이므로)
+                if (item.children && item.children.length > 0) {
+                    item.children.forEach(child => {
+                        const cRow = document.createElement('tr');
+                        cRow.style.background = '#f9fafb';
+                        cRow.innerHTML = `
+                            <td style="padding-left:20px; font-size:0.75rem; color:#666;">└ ${child.type}</td>
+                            <td style="font-size:0.75rem; color:#666;">${child.name}</td>
+                            <td style="font-size:0.75rem; color:#999; overflow:hidden; text-overflow:ellipsis; max-width:150px;">${child.id}</td>
+                            <td></td>
+                        `;
+                        body.appendChild(cRow);
+                    });
+                }
+            });
+        }
+
+        window.updateTempItem = (idx, key, val) => { tempSeriesData[idx][key] = val; };
+        window.deleteTempItem = (idx) => {
+            if (confirm('이 항목을 삭제하시겠습니까?')) {
+                tempSeriesData.splice(idx, 1);
+                renderFileManagerList();
+            }
+        };
+
+        window.closeFileManager = () => {
+            document.getElementById('fileManagerModal').style.display = 'none';
+        }
+
+        window.saveFileChanges = () => {
+            if (currentEditingVideoIndex === -1) return;
+            window.currentAdminData.videos[currentEditingVideoIndex].seriesData = tempSeriesData;
+            // driveIds 동기화 (하위 호환성)
+            window.currentAdminData.videos[currentEditingVideoIndex].driveIds = tempSeriesData.map(d => d.id);
+
+            window.saveAdminData();
+            window.renderVideoList();
+            closeFileManager();
+            alert('변경사항이 저장되었습니다.');
+        };
 
         window.deleteVideo = async (index) => {
             if (confirm('이 영상을 삭제하시겠습니까?')) {

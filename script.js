@@ -265,7 +265,12 @@ if (currentJudge) {
         infoEl.innerText = displayInfo;
 
         const playlistContainer = document.getElementById('playlistTabs');
+        const subPlaylistContainer = document.getElementById('subPlaylistTabs');
         if (playlistContainer) playlistContainer.innerHTML = '';
+        if (subPlaylistContainer) {
+            subPlaylistContainer.innerHTML = '';
+            subPlaylistContainer.style.display = 'none';
+        }
 
         const iframeTag = document.getElementById('documentViewer');
 
@@ -335,14 +340,47 @@ if (currentJudge) {
                     btn.onclick = () => {
                         document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
-                        playSource(item.id, null, item.type);
+
+                        // 하위 탭 처리
+                        if (subPlaylistContainer) {
+                            subPlaylistContainer.innerHTML = '';
+                            if (item.type === 'folder' && item.children && item.children.length > 0) {
+                                subPlaylistContainer.style.display = 'flex';
+                                item.children.forEach((child, cIdx) => {
+                                    const subBtn = document.createElement('button');
+                                    subBtn.className = `series-btn sub-tab ${cIdx === 0 ? 'active' : ''}`;
+                                    subBtn.style.fontSize = '0.75rem';
+                                    subBtn.style.padding = '3px 8px';
+                                    subBtn.innerText = child.name;
+                                    subBtn.onclick = () => {
+                                        subPlaylistContainer.querySelectorAll('.sub-tab').forEach(sb => sb.classList.remove('active'));
+                                        subBtn.classList.add('active');
+                                        playSource(child.id, null, child.type);
+                                    };
+                                    subPlaylistContainer.appendChild(subBtn);
+                                });
+                                // 첫 번째 자식 즉시 재생
+                                playSource(item.children[0].id, null, item.children[0].type);
+                            } else {
+                                subPlaylistContainer.style.display = 'none';
+                                playSource(item.id, null, item.type);
+                            }
+                        } else {
+                            playSource(item.id, null, item.type);
+                        }
                     };
                     playlistContainer.appendChild(btn);
                 });
             }
-            // 첫 번째 아이템 즉시 재생
+            // 첫 번째 아이템 즉시 재생 (초기 로드 시 하위 탭 대응)
             const first = seriesItems[0];
-            playSource(first.id, null, first.type);
+            if (first.type === 'folder' && first.children && first.children.length > 0) {
+                // 초기 상태에서도 하위 탭 렌더링을 위해 버튼 클릭 시뮬레이션 또는 로직 호출
+                // 여기서는 간단히 첫 번째 버튼의 클릭 이벤트를 트리거
+                playlistContainer.querySelector('.series-btn').click();
+            } else {
+                playSource(first.id, null, first.type);
+            }
         } else if (video.driveId) {
             // 완전 구형 단건 데이터 호환성
             if (playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
