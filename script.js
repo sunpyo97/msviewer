@@ -91,6 +91,31 @@ if (currentJudge) {
                 "ai_visual": { name: "AI비주얼", weights: { strategic: 15, technical: 25, artistic: 25, delivery: 25, performance: 10 } },
                 "ai_campaign": { name: "AI캠페인", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } }
             }
+        },
+        "tech_solution": {
+            name: "테크/솔루션",
+            sub: {
+                "marketing_tech": { name: "마케팅테크", weights: { strategic: 40, technical: 40, artistic: 0, delivery: 0, performance: 20 } },
+                "ad_tech": { name: "애드테크", weights: { strategic: 40, technical: 40, artistic: 0, delivery: 0, performance: 20 } },
+                "ai_tech_innovation": { name: "AI기술혁신", weights: { strategic: 40, technical: 40, artistic: 0, delivery: 0, performance: 20 } }
+            }
+        },
+        "digital_pr": {
+            name: "디지털PR",
+            sub: {
+                "public_pr": { name: "공공PR", weights: { strategic: 20, technical: 10, artistic: 20, delivery: 30, performance: 20 } },
+                "csr": { name: "CSR(기업의 사회적 책임)", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } },
+                "crisis": { name: "위기·평판관리PR", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } },
+                "marketing_pr": { name: "마케팅PR", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } }
+            }
+        },
+        "special_category": {
+            name: "특별부문",
+            sub: {
+                "global_campaign": { name: "글로벌 캠페인", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } },
+                "public_sector": { name: "공공분야", weights: { strategic: 20, technical: 10, artistic: 20, delivery: 40, performance: 10 } },
+                "digital_signage": { name: "디지털 사이지니", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } }
+            }
         }
     };
 
