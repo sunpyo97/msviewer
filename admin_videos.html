@@ -284,22 +284,36 @@
                 scannedAppFormId = null;
                 scannedAddDescId = null;
 
-                // 자식 항목들 스캔을 위한 공통 함수 (폴더인 경우 타입 지정 포함)
-                async function getChildrenData(targetId) {
+                // 자식 항목들 스캔을 위한 공통 함수 (폴더인 경우 재귀적으로 들어가서 모든 파일을 평탄하게 수집)
+                async function getAllNestedFiles(targetId, parentName = "", allFiles = []) {
                     const childrenApiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
                     const childRes = await fetch(childrenApiUrl);
                     const childData = await childRes.json();
-                    return (childData.files || []).map(c => {
+                    const files = childData.files || [];
+
+                    for (const c of files) {
                         const cLower = c.name.toLowerCase();
-                        let cType = 'doc';
-                        if (c.mimeType === 'application/vnd.google-apps.folder') cType = 'folder';
-                        else if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
-                        else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png') || cLower.endsWith('.jpeg')) cType = 'image';
-                        return { id: c.id, name: c.name, type: cType };
-                    });
+                        const id = c.id;
+                        const isFolder = c.mimeType === 'application/vnd.google-apps.folder';
+
+                        if (isFolder) {
+                            // 하위 폴더인 경우 재귀 호출로 그 내부 파일들을 가져옴
+                            await getAllNestedFiles(id, c.name, allFiles);
+                        } else {
+                            // 파일인 경우 타입 결정 후 수집
+                            let cType = 'doc';
+                            if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
+                            else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png') || cLower.endsWith('.jpeg')) cType = 'image';
+
+                            // 파일 이름에 부모 폴더명을 붙여서 어디 소속인지 알 수 있게 함
+                            const displayName = parentName ? `[${parentName}] ${c.name}` : c.name;
+                            allFiles.push({ id: id, name: displayName, type: cType });
+                        }
+                    }
+                    return allFiles;
                 }
 
-                // 1단계 하위 항목들을 시발점으로 스캔 + 폴더인 경우 자식들까지 스캔
+                // 1단계 하위 항목들을 시발점으로 스캔 + 폴더인 경우 자식들을 재귀적으로 평탄화
                 async function scanRecursiveWithChildren(targetFolderId) {
                     const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
                     const response = await fetch(apiUrl);
@@ -313,8 +327,8 @@
                         const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
 
                         if (isFolder) {
-                            // 폴더의 자식들도 스캔
-                            const children = await getChildrenData(id);
+                            // 폴더의 모든 자식들을 재귀적으로 수집 (평탄화)
+                            const children = await getAllNestedFiles(id);
                             scannedSeriesData.push({ id: id, name: file.name, folderName: file.name, type: 'folder', children: children });
                         } else {
                             // 파일 분류
@@ -339,7 +353,7 @@
                     alert('유효한 파일을 찾지 못했습니다.');
                 } else {
                     const resultText = scannedSeriesData.map(d => {
-                        if (d.type === 'folder') return `📁 ${d.name}`;
+                        if (d.type === 'folder') return `📁 ${d.name} (${d.children.length}개)`;
                         return (d.folderName ? `[${d.folderName}] ` : '') + d.name;
                     }).join(', ');
                     document.getElementById('scanResVideo').innerHTML = `🎬 작품/시리즈: <span style="font-weight:bold; color:#000;">${resultText}</span>`;
@@ -350,7 +364,7 @@
 
             } catch (err) {
                 console.error("스캔 실패:", err);
-                alert('스캔 중 오류 발생');
+                alert('스캔 중 오류 발생: ' + err.message);
             } finally {
                 btn.innerText = "폴더 스캔";
                 btn.disabled = false;
