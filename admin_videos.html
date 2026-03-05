@@ -254,8 +254,8 @@
                 scannedAppFormId = null;
                 scannedAddDescId = null;
 
-                // 재귀적 폴더 스캔 함수 정의
-                async function scanRecursive(targetFolderId, folderName = "") {
+                // 1단계 하위 항목들을 시발점으로 스캔
+                async function scanTopLevel(targetFolderId) {
                     const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
                     const response = await fetch(apiUrl);
                     if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`);
@@ -264,33 +264,39 @@
 
                     for (const file of files) {
                         const nameLower = file.name.toLowerCase();
+                        const id = file.id;
                         const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
 
                         if (isFolder) {
-                            // 하위 폴더면 재귀 호출 (폴더 이름 전달)
-                            await scanRecursive(file.id, file.name);
+                            // 1단계 폴더면 그 자체를 'folder' 타입 탭으로 등록
+                            scannedSeriesData.push({ id: id, name: file.name, folderName: file.name, type: 'folder' });
                         } else {
                             // 파일 분류
-                            if (file.mimeType.includes('video/') || nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi') || nameLower.endsWith('.m4v')) {
-                                scannedSeriesData.push({ id: file.id, name: file.name, folderName: folderName, type: 'video' });
+                            if (file.mimeType.includes('video/') || nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'video' });
                             } else if (nameLower.includes('신청') || nameLower.includes('form') || nameLower.includes('app')) {
-                                scannedAppFormId = file.id;
+                                scannedAppFormId = id;
                             } else if (nameLower.includes('설명') || nameLower.includes('desc') || nameLower.includes('보충') || nameLower.includes('자료')) {
-                                scannedAddDescId = file.id;
-                            } else if (file.mimeType.includes('pdf') || file.mimeType.includes('presentation') || nameLower.endsWith('.pdf') || nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) {
-                                // 폴더 내의 일반 문서도 시리즈 데이터로 포함 (문서 부문 대비)
-                                scannedSeriesData.push({ id: file.id, name: file.name, folderName: folderName, type: 'doc' });
+                                scannedAddDescId = id;
+                            } else if (file.mimeType.includes('image/') || nameLower.endsWith('.jpg') || nameLower.endsWith('.png') || nameLower.endsWith('.jpeg')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'image' });
+                            } else if (file.mimeType.includes('pdf') || file.mimeType.includes('presentation') || nameLower.endsWith('.pdf') || nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx') || nameLower.endsWith('.docx') || nameLower.endsWith('.xlsx')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'doc' });
                             }
                         }
                     }
                 }
 
-                await scanRecursive(folderId);
+                await scanTopLevel(folderId);
 
                 if (scannedSeriesData.length === 0 && !scannedAppFormId) {
                     alert('유효한 파일을 찾지 못했습니다.');
                 } else {
-                    document.getElementById('scanResVideo').innerHTML = `🎬 작품/시리즈: <span style="font-weight:bold; color:#000;">${scannedSeriesData.map(d => (d.folderName ? `[${d.folderName}] ` : '') + d.name).join(', ')}</span>`;
+                    const resultText = scannedSeriesData.map(d => {
+                        if (d.type === 'folder') return `📁 ${d.name}`;
+                        return (d.folderName ? `[${d.folderName}] ` : '') + d.name;
+                    }).join(', ');
+                    document.getElementById('scanResVideo').innerHTML = `🎬 작품/시리즈: <span style="font-weight:bold; color:#000;">${resultText}</span>`;
                     document.getElementById('scanResApp').innerHTML = `📄 신청서: <span style="font-weight:bold; color:#000;">${scannedAppFormId || '없음'}</span>`;
                     document.getElementById('scanResDesc').innerHTML = `📄 추가설명: <span style="font-weight:bold; color:#000;">${scannedAddDescId || '없음'}</span>`;
                     document.getElementById('scanResultBox').style.display = 'block';

@@ -269,7 +269,7 @@ if (currentJudge) {
 
         const iframeTag = document.getElementById('documentViewer');
 
-        const playSource = async (driveId, isLocalObj = false, isDoc = false) => {
+        const playSource = async (driveId, isLocalObj = false, type = 'video') => {
             if (videoTag.src.startsWith('blob:') && videoTag.src !== isLocalObj) {
                 URL.revokeObjectURL(videoTag.src);
             }
@@ -285,12 +285,17 @@ if (currentJudge) {
 
             if (driveId) {
                 let cleanId = driveId;
-                const match = driveId.match(/\/d\/([a-zA-Z0-9_-]+)/) || driveId.match(/id=([a-zA-Z0-9_-]+)/);
+                const match = driveId.match(/\/d\/([a-zA-Z0-9_-]+)/) || driveId.match(/\/folders\/([a-zA-Z0-9_-]+)/) || driveId.match(/id=([a-zA-Z0-9_-]+)/);
                 if (match) cleanId = match[1];
-                iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+
+                if (type === 'folder') {
+                    iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
+                } else {
+                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+                }
                 iframeTag.style.cssText = 'display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 9999;';
             } else if (isLocalObj) {
-                if (isDoc) {
+                if (type === 'doc' || type === 'image') {
                     iframeTag.src = isLocalObj;
                     iframeTag.style.cssText = 'display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 9999;';
                 } else {
@@ -330,14 +335,14 @@ if (currentJudge) {
                     btn.onclick = () => {
                         document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
-                        playSource(item.id, null, item.type === 'doc');
+                        playSource(item.id, null, item.type);
                     };
                     playlistContainer.appendChild(btn);
                 });
             }
             // 첫 번째 아이템 즉시 재생
             const first = seriesItems[0];
-            playSource(first.id, null, first.type === 'doc');
+            playSource(first.id, null, first.type);
         } else if (video.driveId) {
             // 완전 구형 단건 데이터 호환성
             if (playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
