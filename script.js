@@ -284,6 +284,7 @@ if (currentJudge) {
             iframeTag.style.display = 'none';
             iframeTag.src = '';
             placeholder.style.display = 'none';
+            console.log(`[PlaySource] ID: ${driveId}, MetaType: ${type}`);
 
             const playerControls = document.querySelector('.player-controls');
             if (playerControls) playerControls.style.display = 'none';
@@ -295,6 +296,9 @@ if (currentJudge) {
 
                 if (type === 'folder') {
                     iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
+                } else if (type === 'image') {
+                    // 이미지인 경우 preview보다 더 직접적인 view 모드 사용 권장
+                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/view?usp=sharing`;
                 } else {
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 }
