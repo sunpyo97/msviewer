@@ -284,6 +284,21 @@
                 scannedAppFormId = null;
                 scannedAddDescId = null;
 
+                // 자식 항목들 스캔을 위한 공통 함수 (폴더인 경우 타입 지정 포함)
+                async function getChildrenData(targetId) {
+                    const childrenApiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
+                    const childRes = await fetch(childrenApiUrl);
+                    const childData = await childRes.json();
+                    return (childData.files || []).map(c => {
+                        const cLower = c.name.toLowerCase();
+                        let cType = 'doc';
+                        if (c.mimeType === 'application/vnd.google-apps.folder') cType = 'folder';
+                        else if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
+                        else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png') || cLower.endsWith('.jpeg')) cType = 'image';
+                        return { id: c.id, name: c.name, type: cType };
+                    });
+                }
+
                 // 1단계 하위 항목들을 시발점으로 스캔 + 폴더인 경우 자식들까지 스캔
                 async function scanRecursiveWithChildren(targetFolderId) {
                     const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
@@ -299,18 +314,7 @@
 
                         if (isFolder) {
                             // 폴더의 자식들도 스캔
-                            const childrenApiUrl = `https://www.googleapis.com/drive/v3/files?q='${id}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
-                            const childRes = await fetch(childrenApiUrl);
-                            const childData = await childRes.json();
-                            const children = (childData.files || []).map(c => {
-                                const cLower = c.name.toLowerCase();
-                                let cType = 'doc';
-                                if (c.mimeType === 'application/vnd.google-apps.folder') cType = 'folder';
-                                else if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
-                                else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png')) cType = 'image';
-                                return { id: c.id, name: c.name, type: cType };
-                            });
-
+                            const children = await getChildrenData(id);
                             scannedSeriesData.push({ id: id, name: file.name, folderName: file.name, type: 'folder', children: children });
                         } else {
                             // 파일 분류
