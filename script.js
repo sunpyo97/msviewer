@@ -296,8 +296,8 @@ if (currentJudge) {
                 if (match) cleanId = match[0];
 
                 if (type === 'folder') {
-                    // embeddedfolderview 대신 일반 preview가 더 안정적인 경우가 많음
-                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+                    // 폴더는 preview가 아니라 embeddedfolderview를 사용해야 격자 형태로 내용이 보입니다.
+                    iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
                 } else if (type === 'image') {
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/view?usp=sharing`;
                 } else {
