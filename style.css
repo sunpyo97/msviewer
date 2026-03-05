@@ -173,6 +173,30 @@ body {
     flex-wrap: wrap;
 }
 
+.playlist-tabs.sub-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 10px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sub-tab {
+    opacity: 0.8;
+    transform: scale(0.95);
+    background: #475569 !important;
+    border: 1px solid #64748b !important;
+}
+
+.sub-tab.active {
+    opacity: 1;
+    transform: scale(1);
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
 .series-btn {
     padding: 8px 16px;
     background: #f1f5f9;

@@ -305,7 +305,8 @@
                             const children = (childData.files || []).map(c => {
                                 const cLower = c.name.toLowerCase();
                                 let cType = 'doc';
-                                if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
+                                if (c.mimeType === 'application/vnd.google-apps.folder') cType = 'folder';
+                                else if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
                                 else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png')) cType = 'image';
                                 return { id: c.id, name: c.name, type: cType };
                             });
