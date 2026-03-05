@@ -291,13 +291,14 @@ if (currentJudge) {
 
             if (driveId) {
                 let cleanId = driveId;
-                const match = driveId.match(/\/d\/([a-zA-Z0-9_-]+)/) || driveId.match(/\/folders\/([a-zA-Z0-9_-]+)/) || driveId.match(/id=([a-zA-Z0-9_-]+)/);
-                if (match) cleanId = match[1];
+                // 더 강력한 정규표현식: /d/, /folders/, id= 패턴 모두 대응
+                const match = driveId.match(/[-\w]{25,}/);
+                if (match) cleanId = match[0];
 
                 if (type === 'folder') {
-                    iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
+                    // embeddedfolderview 대신 일반 preview가 더 안정적인 경우가 많음
+                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 } else if (type === 'image') {
-                    // 이미지인 경우 preview보다 더 직접적인 view 모드 사용 권장
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/view?usp=sharing`;
                 } else {
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
