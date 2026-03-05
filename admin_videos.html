@@ -304,6 +304,7 @@
                             let cType = 'doc';
                             if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
                             else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png') || cLower.endsWith('.jpeg')) cType = 'image';
+                            else if (c.mimeType.includes('presentation') || cLower.endsWith('.ppt') || cLower.endsWith('.pptx')) cType = 'ppt';
 
                             // 파일 이름에 부모 폴더명을 붙여서 어디 소속인지 알 수 있게 함
                             const displayName = parentName ? `[${parentName}] ${c.name}` : c.name;
@@ -340,7 +341,9 @@
                                 scannedAddDescId = id;
                             } else if (file.mimeType.includes('image/') || nameLower.endsWith('.jpg') || nameLower.endsWith('.png') || nameLower.endsWith('.jpeg')) {
                                 scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'image' });
-                            } else if (file.mimeType.includes('pdf') || file.mimeType.includes('presentation') || nameLower.endsWith('.pdf') || nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx') || nameLower.endsWith('.docx') || nameLower.endsWith('.xlsx')) {
+                            } else if (file.mimeType.includes('presentation') || nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'ppt' });
+                            } else if (file.mimeType.includes('pdf') || nameLower.endsWith('.pdf') || file.mimeType.includes('document') || nameLower.endsWith('.docx') || file.mimeType.includes('spreadsheet') || nameLower.endsWith('.xlsx')) {
                                 scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'doc' });
                             }
                         }

@@ -298,6 +298,9 @@ if (currentJudge) {
                 if (type === 'folder') {
                     // 폴더는 preview가 아니라 embeddedfolderview를 사용해야 격자 형태로 내용이 보입니다.
                     iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
+                } else if (type === 'ppt') {
+                    // PPT/PPTX 파일은 전용 프레젠테이션 뷰어를 사용하는 것이 더 안정적입니다.
+                    iframeTag.src = `https://docs.google.com/presentation/d/${cleanId}/preview`;
                 } else {
                     // 이미지, 문서 등 모든 파일은 /preview 형식이 iframe 임베드 시 가장 안정적입니다.
                     // /view 형식은 권한 이슈를 일으키는 경우가 많아 /preview로 통일합니다.
