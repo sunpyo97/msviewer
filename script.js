@@ -581,9 +581,19 @@ if (currentJudge) {
             };
 
             if (!window.currentData.results) window.currentData.results = [];
-            window.currentData.results.push(result);
+
+            // Check for existing score by the same judge for the same video
+            const existingIndex = window.currentData.results.findIndex(r => r.judgeId === currentJudge.id && r.videoId === video.id);
+            if (existingIndex !== -1) {
+                // Update existing record
+                window.currentData.results[existingIndex] = result;
+            } else {
+                // Add new record
+                window.currentData.results.push(result);
+            }
+
             window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData/results'), window.currentData.results)
-                .then(() => { alert('최종 제출되었습니다. 수고하셨습니다.'); })
+                .then(() => { alert('심사 결과가 성공적으로 등록/수정되었습니다. 수고하셨습니다.'); })
                 .catch((error) => {
                     console.error('제출 저장 실패:', error);
                     alert('점수 저장에 실패했습니다. 관리자에게 문의하세요.');

@@ -29,6 +29,7 @@
                         <tr>
                             <th>시간</th>
                             <th>심사위원</th>
+                            <th>출품번호</th>
                             <th>영상정보</th>
                             <th>전략성</th>
                             <th>기술성</th>
@@ -57,7 +58,7 @@
             body.innerHTML = '';
 
             if (window.currentAdminData.results.length === 0) {
-                body.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 3rem; color:var(--text-secondary);">심사 결과 데이터를 기다리는 중입니다...</td></tr>`;
+                body.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 3rem; color:var(--text-secondary);">심사 결과 데이터를 기다리는 중입니다...</td></tr>`;
                 return;
             }
 
@@ -70,6 +71,7 @@
                 row.innerHTML = `
                     <td style="font-size:0.75rem;">${new Date(res.timestamp).toLocaleTimeString()}</td>
                     <td>${res.judgeName}</td>
+                    <td style="font-weight:bold; color:var(--primary-color);">${res.videoId}</td>
                     <td style="font-size:0.75rem;">[${mainName}>${subName}] ${res.videoTitle}</td>
                     <td>${s.strategic || 0}</td>
                     <td>${s.technical || 0}</td>
