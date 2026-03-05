@@ -298,9 +298,9 @@ if (currentJudge) {
                 if (type === 'folder') {
                     // 폴더는 preview가 아니라 embeddedfolderview를 사용해야 격자 형태로 내용이 보입니다.
                     iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
-                } else if (type === 'image') {
-                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/view?usp=sharing`;
                 } else {
+                    // 이미지, 문서 등 모든 파일은 /preview 형식이 iframe 임베드 시 가장 안정적입니다.
+                    // /view 형식은 권한 이슈를 일으키는 경우가 많아 /preview로 통일합니다.
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 }
                 iframeTag.style.cssText = 'display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 9999;';
