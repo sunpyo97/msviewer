@@ -367,19 +367,44 @@ if (currentJudge) {
                         subPlaylistContainer.innerHTML = '';
                         if (item.type === 'folder' && item.children && item.children.length > 0) {
                             subPlaylistContainer.style.display = 'flex';
-                            item.children.forEach((child, cIdx) => {
-                                const subBtn = document.createElement('button');
-                                subBtn.className = `series-btn sub-tab ${cIdx === 0 ? 'active' : ''}`;
-                                subBtn.style.fontSize = '0.75rem';
-                                subBtn.style.padding = '3px 8px';
-                                subBtn.innerText = child.name;
-                                subBtn.onclick = () => {
-                                    subPlaylistContainer.querySelectorAll('.sub-tab').forEach(sb => sb.classList.remove('active'));
-                                    subBtn.classList.add('active');
+
+                            if (item.children.length > 1) {
+                                // 자식이 많을 경우 드롭다운(select)으로 렌더링
+                                const subSelectEl = document.createElement('select');
+                                subSelectEl.className = 'series-select sub-select';
+                                subSelectEl.style.cssText = 'padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; max-width: 100%; word-break: break-all; margin-top: 5px;';
+
+                                item.children.forEach((child, cIdx) => {
+                                    const option = document.createElement('option');
+                                    option.value = cIdx;
+                                    option.innerText = child.name;
+                                    subSelectEl.appendChild(option);
+                                });
+
+                                subSelectEl.addEventListener('change', (e) => {
+                                    const cIdx = e.target.value;
+                                    const child = item.children[cIdx];
                                     playSource(child.id, null, child.type);
-                                };
-                                subPlaylistContainer.appendChild(subBtn);
-                            });
+                                });
+
+                                subPlaylistContainer.appendChild(subSelectEl);
+                            } else {
+                                // 자식이 1개일 경우 그냥 버튼으로 렌더링
+                                item.children.forEach((child, cIdx) => {
+                                    const subBtn = document.createElement('button');
+                                    subBtn.className = `series-btn sub-tab ${cIdx === 0 ? 'active' : ''}`;
+                                    subBtn.style.fontSize = '0.75rem';
+                                    subBtn.style.padding = '3px 8px';
+                                    subBtn.innerText = child.name;
+                                    subBtn.onclick = () => {
+                                        subPlaylistContainer.querySelectorAll('.sub-tab').forEach(sb => sb.classList.remove('active'));
+                                        subBtn.classList.add('active');
+                                        playSource(child.id, null, child.type);
+                                    };
+                                    subPlaylistContainer.appendChild(subBtn);
+                                });
+                            }
+
                             // 첫 번째 자식 즉시 재생
                             playSource(item.children[0].id, null, item.children[0].type);
                         } else {
@@ -401,19 +426,41 @@ if (currentJudge) {
                 if (subPlaylistContainer) {
                     subPlaylistContainer.innerHTML = '';
                     subPlaylistContainer.style.display = 'flex';
-                    first.children.forEach((child, cIdx) => {
-                        const subBtn = document.createElement('button');
-                        subBtn.className = `series-btn sub-tab ${cIdx === 0 ? 'active' : ''}`;
-                        subBtn.style.fontSize = '0.75rem';
-                        subBtn.style.padding = '3px 8px';
-                        subBtn.innerText = child.name;
-                        subBtn.onclick = () => {
-                            subPlaylistContainer.querySelectorAll('.sub-tab').forEach(sb => sb.classList.remove('active'));
-                            subBtn.classList.add('active');
+
+                    if (first.children.length > 1) {
+                        const subSelectEl = document.createElement('select');
+                        subSelectEl.className = 'series-select sub-select';
+                        subSelectEl.style.cssText = 'padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; max-width: 100%; word-break: break-all; margin-top: 5px;';
+
+                        first.children.forEach((child, cIdx) => {
+                            const option = document.createElement('option');
+                            option.value = cIdx;
+                            option.innerText = child.name;
+                            subSelectEl.appendChild(option);
+                        });
+
+                        subSelectEl.addEventListener('change', (e) => {
+                            const cIdx = e.target.value;
+                            const child = first.children[cIdx];
                             playSource(child.id, null, child.type);
-                        };
-                        subPlaylistContainer.appendChild(subBtn);
-                    });
+                        });
+
+                        subPlaylistContainer.appendChild(subSelectEl);
+                    } else {
+                        first.children.forEach((child, cIdx) => {
+                            const subBtn = document.createElement('button');
+                            subBtn.className = `series-btn sub-tab ${cIdx === 0 ? 'active' : ''}`;
+                            subBtn.style.fontSize = '0.75rem';
+                            subBtn.style.padding = '3px 8px';
+                            subBtn.innerText = child.name;
+                            subBtn.onclick = () => {
+                                subPlaylistContainer.querySelectorAll('.sub-tab').forEach(sb => sb.classList.remove('active'));
+                                subBtn.classList.add('active');
+                                playSource(child.id, null, child.type);
+                            };
+                            subPlaylistContainer.appendChild(subBtn);
+                        });
+                    }
                     playSource(first.children[0].id, null, first.children[0].type);
                 }
             } else {
