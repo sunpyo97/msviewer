@@ -281,12 +281,12 @@
                     categoryHtml = v.categories.map(c => {
                         const m = JUDGING_SCHEMA[c.main]?.name || c.main;
                         const s = JUDGING_SCHEMA[c.main]?.sub[c.sub]?.name || c.sub;
-                        return `<div style="font-size:0.75rem;">${m} > ${s}</div>`;
+                        return `<div class="category-tag" style="font-size:0.75rem;">${m} &gt; ${s}</div>`;
                     }).join('');
                 } else if (v.mainCat && v.subCat) {
                     const mainName = JUDGING_SCHEMA[v.mainCat]?.name || v.mainCat;
                     const subName = JUDGING_SCHEMA[v.mainCat]?.sub[v.subCat]?.name || v.subCat;
-                    categoryHtml = `<div style="font-size:0.75rem;">${mainName} > ${subName}</div>`;
+                    categoryHtml = `<div class="category-tag" style="font-size:0.75rem;">${mainName} &gt; ${subName}</div>`;
                 } else {
                     categoryHtml = `<div style="font-size:0.75rem;">-</div>`;
                 }

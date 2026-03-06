@@ -518,7 +518,10 @@ input[type="number"] {
 
 .admin-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* Changed from 1fr 1fr to 1fr 1.5fr to give the table more space if it's placed side-by-side, 
+       but currently it's just stacked in config-group. Let's make it stack by default for better width,
+       or give the second column more space. */
+    grid-template-columns: 1fr 1.5fr;
     gap: 20px;
 }
 
@@ -561,12 +564,33 @@ input[type="password"]:focus {
     border-collapse: collapse;
     margin-top: 1rem;
     font-size: 0.9rem;
+    table-layout: auto;
+    white-space: nowrap;
+    /* Prevent unnecessary text wrapping */
 }
 
 .results-table td {
     padding: 10px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+/* Allow title to wrap but keep other columns clean */
+.results-table td:nth-child(2) {
+    white-space: normal;
+    min-width: 150px;
+}
+
+/* Style for category tags in admin table to be more compact and horizontal */
+.results-table td .category-tag {
+    display: inline-block;
+    background: #f1f5f9;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 2px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
 }
 
 /* === 고도화된 보안 스타일 === */
