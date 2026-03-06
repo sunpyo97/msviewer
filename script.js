@@ -173,10 +173,12 @@ if (currentJudge) {
         const videoSelect = document.getElementById('videoSelect');
         videoSelect.innerHTML = '';
 
-        const filteredVideos = videoData.filter(v =>
-            v.mainCat === mainCat &&
-            (subCat === 'default' || v.subCat === subCat || !v.subCat)
-        );
+        const filteredVideos = videoData.filter(v => {
+            const cats = v.categories || [{ main: v.mainCat, sub: v.subCat }];
+            return cats.some(c =>
+                c.main === mainCat && (subCat === 'default' || c.sub === subCat || !c.sub)
+            );
+        });
 
         filteredVideos.forEach(v => {
             const option = document.createElement('option');
@@ -243,22 +245,30 @@ if (currentJudge) {
         const displayInfo = `출품번호: ${video.id} | 출품사: ${video.company}`;
 
         let catChanged = false;
-        if (video.mainCat && mainSelect.value !== video.mainCat) {
-            mainSelect.value = video.mainCat;
+
+        // Find if the currently selected category is valid for this video
+        let activeMainCat = mainSelect.value;
+        let activeSubCat = subSelect.value;
+
+        // Default to the first category if the video has multiple categories
+        const videoCats = video.categories || [{ main: video.mainCat, sub: video.subCat }];
+        const validMatch = videoCats.find(c => c.main === activeMainCat && (c.sub === activeSubCat || activeSubCat === 'default' || !c.sub));
+
+        if (!validMatch && videoCats.length > 0) {
+            const firstCat = videoCats[0];
+            mainSelect.value = firstCat.main;
             subSelect.innerHTML = '';
-            if (JUDGING_SCHEMA[video.mainCat]?.sub) {
-                Object.entries(JUDGING_SCHEMA[video.mainCat].sub).forEach(([key, data]) => {
+            if (JUDGING_SCHEMA[firstCat.main]?.sub) {
+                Object.entries(JUDGING_SCHEMA[firstCat.main].sub).forEach(([key, data]) => {
                     const option = document.createElement('option');
                     option.value = key; option.innerText = data.name;
                     subSelect.appendChild(option);
                 });
             }
+            subSelect.value = firstCat.sub || 'default';
             catChanged = true;
         }
-        if (video.subCat && subSelect.value !== video.subCat) {
-            subSelect.value = video.subCat;
-            catChanged = true;
-        }
+
         if (catChanged) renderFields(mainSelect.value, subSelect.value);
 
         titleEl.innerText = displayTitle;
@@ -666,8 +676,13 @@ if (currentJudge) {
 
             if (!window.currentData.results) window.currentData.results = [];
 
-            // Check for existing score by the same judge for the same video
-            const existingIndex = window.currentData.results.findIndex(r => r.judgeId === currentJudge.id && r.videoId === video.id);
+            // Check for existing score by the same judge for the same video and same category
+            const existingIndex = window.currentData.results.findIndex(r =>
+                r.judgeId === currentJudge.id &&
+                r.videoId === video.id &&
+                r.mainCat === result.mainCat &&
+                r.subCat === result.subCat
+            );
             if (existingIndex !== -1) {
                 // Update existing record
                 window.currentData.results[existingIndex] = result;
