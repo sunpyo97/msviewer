@@ -30,6 +30,8 @@
         </div>
         <div class="user-profile">
             <span class="user-name" style="color: var(--text-primary); font-weight: 600;">심사위원: 김광고</span>
+            <button id="myScoresBtn" class="btn secondary"
+                style="padding: 5px 12px; font-size: 12px; font-weight: 600; margin-right: 10px;">내 심사 결과</button>
             <button class="logout-btn"
                 style="background: white; border: 1px solid #ddd; color: var(--text-secondary); padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">로그아웃</button>
         </div>
@@ -132,6 +134,48 @@
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="video-db.js"></script>
     <script type="module" src="script.js"></script>
+
+    <!-- 내 심사 결과 모달 -->
+    <div id="myScoresModal" class="modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
+        <div class="modal-content"
+            style="background:white; padding:30px; border-radius:12px; width:95%; max-width:900px; max-height:85vh; overflow-y:auto; position:relative; color: #333;">
+            <button id="closeMyScoresBtn"
+                style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:1.8rem; cursor:pointer; color:#666;">&times;</button>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: var(--primary-color);">내 심사 현황</h2>
+                <button id="exportMyScoresBtn" class="btn primary" style="background:#10b981; border-color:#10b981;">엑셀
+                    다운로드</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="results-table"
+                    style="color: #333; font-size: 0.85rem; width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f8fafc;">
+                        <tr>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: left;">심사 일시</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: left;">출품번호 / 부문
+                            </th>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: left;">작품명</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: center;">전략성</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: center;">기술성</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: center;">예술성</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: center;">전달력</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: center;">성과/대중성</th>
+                            <th
+                                style="padding: 10px; border-bottom: 2px solid #e2e8f0; text-align: center; color: var(--primary-color);">
+                                총점</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myScoresBody">
+                        <!-- JS dynamic -->
+                    </tbody>
+                </table>
+            </div>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 15px;">* 작품명을 클릭하면 해당 작품 심사 화면으로 이동합니다.</p>
+        </div>
+    </div>
 </body>
 
 </html>

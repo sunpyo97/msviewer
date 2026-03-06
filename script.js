@@ -856,6 +856,136 @@ if (currentJudge) {
                 });
         });
     }
+
+    // === 내 심사 결과 모달 로직 ===
+    const myScoresBtn = document.getElementById('myScoresBtn');
+    const myScoresModal = document.getElementById('myScoresModal');
+    const closeMyScoresBtn = document.getElementById('closeMyScoresBtn');
+    const exportMyScoresBtn = document.getElementById('exportMyScoresBtn');
+
+    if (myScoresBtn && myScoresModal) {
+        myScoresBtn.addEventListener('click', () => {
+            renderMyScores();
+            myScoresModal.style.display = 'flex';
+        });
+
+        closeMyScoresBtn.addEventListener('click', () => {
+            myScoresModal.style.display = 'none';
+        });
+
+        // 외부 클리 시 닫기
+        window.addEventListener('click', (e) => {
+            if (e.target === myScoresModal) {
+                myScoresModal.style.display = 'none';
+            }
+        });
+
+        function renderMyScores() {
+            const tbody = document.getElementById('myScoresBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
+
+            if (results.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">제출한 심사 결과가 없습니다.</td></tr>`;
+                return;
+            }
+
+            // 최신순 정렬
+            results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            results.forEach((res) => {
+                const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.addEventListener('mouseenter', () => tr.style.background = '#f1f5f9');
+                tr.addEventListener('mouseleave', () => tr.style.background = 'transparent');
+
+                // 클릭 시 해당 작품으로 이동
+                tr.addEventListener('click', () => {
+                    const videoSelect = document.getElementById('videoSelect');
+                    if (videoSelect) {
+                        const targetIndex = window.currentData.videos.findIndex(v => v.id === res.videoId);
+                        if (targetIndex !== -1) {
+                            videoSelect.value = targetIndex;
+                            videoSelect.dispatchEvent(new Event('change'));
+                            myScoresModal.style.display = 'none';
+                        }
+                    }
+                });
+
+                const dateStr = new Date(res.timestamp).toLocaleString('ko-KR', {
+                    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+
+                const mainCatName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
+                const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
+                const scores = res.scores || {};
+
+                tr.innerHTML = `
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${dateStr}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size:0.75rem;">${res.videoId}<br><span style="color:#64748b;">${mainCatName} > ${subCatName}</span></td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight:600; color:var(--primary-color);">${res.videoTitle}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${scores.strategic || 0}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${scores.technical || 0}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${scores.artistic || 0}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${scores.delivery || 0}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${scores.performance || 0}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight:bold; color:var(--primary-color);">${res.total || 0}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        exportMyScoresBtn.addEventListener('click', () => {
+            const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
+            if (results.length === 0) {
+                alert('다운로드할 데이터가 없습니다.');
+                return;
+            }
+
+            let csvContent = "\uFEFF"; // 한글 깨짐 방지 BOM
+            csvContent += "심사 일시,출품번호,대분류,소분류,작품명,전략성,기술성,예술성/심미성,메시지 전달력,성과대중성,총점,심사평\n";
+
+            results.forEach(res => {
+                const dateStr = new Date(res.timestamp).toLocaleString('ko-KR');
+                const mainCatName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
+                const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
+                const scores = res.scores || {};
+
+                // CSV 포맷 안전 처리 (따옴표 및 쉼표 치환)
+                const safeTitle = `"${(res.videoTitle || '').replace(/"/g, '""')}"`;
+                const safeComment = `"${(res.comment || '').replace(/"/g, '""')}"`;
+
+                const row = [
+                    `"${dateStr}"`,
+                    res.videoId,
+                    mainCatName,
+                    subCatName,
+                    safeTitle,
+                    scores.strategic || 0,
+                    scores.technical || 0,
+                    scores.artistic || 0,
+                    scores.delivery || 0,
+                    scores.performance || 0,
+                    res.total || 0,
+                    safeComment
+                ].join(',');
+
+                csvContent += row + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            const dateStr = new Date().toLocaleDateString('ko-KR').replace(/\. /g, '').replace('.', '');
+            link.setAttribute("download", `내_심사결과_${currentJudge.name}_${dateStr}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
 }
 
 // === 보안 강화 로직 ===
