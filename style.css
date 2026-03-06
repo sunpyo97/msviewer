@@ -512,16 +512,14 @@ input[type="number"] {
 
 /* Admin Specific */
 .admin-card {
-    max-width: 800px;
+    max-width: 100%;
     margin: 2rem auto;
 }
 
 .admin-grid {
     display: grid;
-    /* Changed from 1fr 1fr to 1fr 1.5fr to give the table more space if it's placed side-by-side, 
-       but currently it's just stacked in config-group. Let's make it stack by default for better width,
-       or give the second column more space. */
-    grid-template-columns: 1fr 1.5fr;
+    /* Stack config groups vertically by default so they can take full horizontal width */
+    grid-template-columns: 1fr;
     gap: 20px;
 }
 
