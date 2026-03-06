@@ -57,10 +57,17 @@
                         <option value="special_category">특별부문</option>
                     </select>
 
-                    <label style="margin-top:10px; display:block;">심사 소분류</label>
                     <select id="vSubCategory">
                         <!-- JS dynamic -->
                     </select>
+
+                    <button type="button" class="btn secondary" onclick="addSelectedCategory()"
+                        style="width:100%; margin-top:5px; font-size:0.8rem; padding:5px;">+ 부문 추가</button>
+
+                    <div id="vSelectedCategories"
+                        style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px; min-height:30px; padding:10px; border:1px solid var(--border-color); border-radius:8px; background:#f9fafb;">
+                        <!-- Category chips will appear here -->
+                    </div>
 
                     <label style="margin-top:10px; display:block;">본편 형식</label>
                     <div style="display: flex; gap: 15px; margin-bottom: 10px;">
@@ -224,14 +231,64 @@
         let scannedAppFormId = null;
         let scannedAddDescId = null;
 
+        // 선택된 다중 카테고리 보관
+        let selectedCategories = [];
+
+        window.addSelectedCategory = function () {
+            const mainCat = document.getElementById('vMainCategory').value;
+            const subCat = document.getElementById('vSubCategory').value;
+
+            // 중복 체크
+            const isDuplicate = selectedCategories.some(c => c.main === mainCat && c.sub === subCat);
+            if (isDuplicate) return alert('이미 추가된 부문입니다.');
+
+            selectedCategories.push({ main: mainCat, sub: subCat });
+            renderCategoryChips();
+        };
+
+        window.removeCategory = function (index) {
+            selectedCategories.splice(index, 1);
+            renderCategoryChips();
+        };
+
+        function renderCategoryChips() {
+            const container = document.getElementById('vSelectedCategories');
+            container.innerHTML = '';
+
+            selectedCategories.forEach((c, idx) => {
+                const mainName = JUDGING_SCHEMA[c.main]?.name || c.main;
+                const subName = JUDGING_SCHEMA[c.main]?.sub[c.sub]?.name || c.sub;
+
+                const chip = document.createElement('div');
+                chip.style.cssText = 'background:white; border:1px solid var(--primary-color); color:var(--primary-color); padding:4px 8px; border-radius:15px; font-size:0.75rem; display:flex; align-items:center; gap:5px;';
+                chip.innerHTML = `
+                    <span>${mainName} > ${subName}</span>
+                    <span style="cursor:pointer; font-weight:bold; color:#ff3b3b;" onclick="removeCategory(${idx})">&times;</span>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
         window.renderVideoList = function () {
             const body = document.getElementById('videoListBody');
             body.innerHTML = '';
 
             currentAdminData.videos.forEach((v, index) => {
+                const v = currentAdminData.videos[index];
                 const row = document.createElement('tr');
-                const mainName = JUDGING_SCHEMA[v.mainCat]?.name || v.mainCat;
-                const subName = JUDGING_SCHEMA[v.mainCat]?.sub[v.subCat]?.name || v.subCat;
+
+                let categoryHtml = '';
+                if (v.categories && v.categories.length > 0) {
+                    categoryHtml = v.categories.map(c => {
+                        const m = JUDGING_SCHEMA[c.main]?.name || c.main;
+                        const s = JUDGING_SCHEMA[c.main]?.sub[c.sub]?.name || c.sub;
+                        return `<div style="font-size:0.75rem;">${m} > ${s}</div>`;
+                    }).join('');
+                } else {
+                    const mainName = JUDGING_SCHEMA[v.mainCat]?.name || v.mainCat;
+                    const subName = JUDGING_SCHEMA[v.mainCat]?.sub[v.subCat]?.name || v.subCat;
+                    categoryHtml = `<div style="font-size:0.75rem;">${mainName} > ${subName}</div>`;
+                }
 
                 let fileStatus = '';
                 const itemsCount = v.seriesData ? v.seriesData.length : (v.driveIds ? v.driveIds.length : (v.hasFile ? v.fileCount : 0));
@@ -248,10 +305,10 @@
                 row.innerHTML = `
                     <td>${v.id}</td>
                     <td>${v.title}</td>
-                    <td style="font-size:0.75rem;">${mainName} > ${subName}</td>
+                    <td>${categoryHtml}</td>
                     <td>${fileStatus}</td>
-                    <td>
-                        <button class="btn secondary" style="padding: 4px 8px; font-size:0.7rem;" onclick="deleteVideo(${index})">삭제</button>
+                    <td style="display:flex; gap:5px;">
+                        <button class="btn secondary" style="padding: 2px 8px;" onclick="window.deleteVideo(${index})">삭제</button>
                     </td>
                 `;
                 body.appendChild(row);
@@ -379,8 +436,13 @@
             const vId = document.getElementById('vId').value;
             const vTitle = document.getElementById('vTitle').value;
             const vCompany = document.getElementById('vCompany').value;
-            const vMainCat = document.getElementById('vMainCategory').value;
-            const vSubCat = document.getElementById('vSubCategory').value;
+
+            if (selectedCategories.length === 0) {
+                // 한 개도 없으면 현재 선택된 것을 자동 추가 시도
+                const main = document.getElementById('vMainCategory').value;
+                const sub = document.getElementById('vSubCategory').value;
+                selectedCategories.push({ main, sub });
+            }
 
             const mainType = document.querySelector('input[name="mainType"]:checked').value;
             const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
@@ -431,7 +493,9 @@
 
             const newVideo = {
                 id: vId, title: vTitle, company: vCompany,
-                mainCat: vMainCat, subCat: vSubCat,
+                categories: [...selectedCategories], // 다중 부문 저장 형식
+                mainCat: selectedCategories[0].main, // 하위 호환성 (단일 부문만 지원하는 구버전/결과용)
+                subCat: selectedCategories[0].sub,
                 mainType: mainType,
                 hasFile: uploadType === 'file' && vFiles.length > 0,
                 fileCount: uploadType === 'file' ? vFiles.length : 0,
@@ -465,11 +529,11 @@
             alert('영상이 목록에 추가되었습니다.');
 
             // 초기화
-            document.getElementById('vId').value = '';
-            document.getElementById('vTitle').value = '';
-            document.getElementById('vDriveId').value = '';
-            document.getElementById('vDriveIdAppForm').value = '';
             document.getElementById('vDriveIdAddDesc').value = '';
+
+            // 카테고리 초기화
+            selectedCategories = [];
+            renderCategoryChips();
         });
 
         let currentEditingVideoIndex = -1;
