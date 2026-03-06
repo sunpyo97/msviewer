@@ -901,14 +901,43 @@ if (currentJudge) {
                 tr.addEventListener('mouseenter', () => tr.style.background = '#f1f5f9');
                 tr.addEventListener('mouseleave', () => tr.style.background = 'transparent');
 
-                // 클릭 시 해당 작품으로 이동
                 tr.addEventListener('click', () => {
+                    const mainSelect = document.getElementById('mainCategorySelect');
+                    const subSelect = document.getElementById('subCategorySelect');
                     const videoSelect = document.getElementById('videoSelect');
-                    if (videoSelect) {
-                        const targetIndex = window.currentData.videos.findIndex(v => v.id === res.videoId);
-                        if (targetIndex !== -1) {
-                            videoSelect.value = targetIndex;
-                            videoSelect.dispatchEvent(new Event('change'));
+
+                    if (mainSelect && subSelect && videoSelect) {
+                        // 해당 비디오의 카테고리 정보 찾기
+                        const video = window.currentData.videos.find(v => v.id === res.videoId);
+                        if (video) {
+                            // 현재 심사했던 카테고리(res.mainCat, res.subCat)로 먼저 전환
+                            mainSelect.value = res.mainCat;
+
+                            // 소분류 옵션 업데이트 (updateSubOptions은 내부적으로 updateVideoList를 호출함)
+                            // 하지만 우리는 동기적으로 값을 다 설정해야 하므로 직접 호출 순서를 제어
+
+                            // 1. 대분류에 따른 소분류 목록 갱신
+                            subSelect.innerHTML = '';
+                            if (JUDGING_SCHEMA[res.mainCat]?.sub) {
+                                Object.entries(JUDGING_SCHEMA[res.mainCat].sub).forEach(([key, data]) => {
+                                    const option = document.createElement('option');
+                                    option.value = key; option.innerText = data.name;
+                                    subSelect.appendChild(option);
+                                });
+                            }
+                            subSelect.value = res.subCat || 'default';
+
+                            // 2. 해당 부문의 배점 필드 및 영상 목록 갱신
+                            renderFields(res.mainCat, subSelect.value);
+                            updateVideoList(res.mainCat, subSelect.value);
+
+                            // 3. 영상 선택 dropdown에서 해당 영상 선택
+                            const targetIndex = window.currentData.videos.findIndex(v => v.id === res.videoId);
+                            if (targetIndex !== -1) {
+                                videoSelect.value = targetIndex;
+                                loadVideo(targetIndex); // 즉시 로드
+                            }
+
                             myScoresModal.style.display = 'none';
                         }
                     }
