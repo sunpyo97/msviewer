@@ -15,7 +15,12 @@
                 <span class="status-badge">Real-time Data</span>
                 <h2>심사 결과 대시보드</h2>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="judgeFilter"
+                    style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: white; font-size: 0.85rem;">
+                    <option value="all">모든 심사위원</option>
+                    <!-- JS dynamic -->
+                </select>
                 <button class="btn secondary" id="clearResultsBtn" style="font-size:0.85rem;">결과 초기화</button>
                 <button class="btn primary" id="exportExcelBtn" style="font-size:0.85rem;">엑셀 내보내기</button>
             </div>
@@ -55,6 +60,7 @@
 
         window.renderDashboard = function () {
             const body = document.getElementById('dashboardBody');
+            const judgeFilter = document.getElementById('judgeFilter');
             body.innerHTML = '';
 
             if (window.currentAdminData.results.length === 0) {
@@ -62,7 +68,38 @@
                 return;
             }
 
-            window.currentAdminData.results.forEach(res => {
+            // Populate the judge filter if it hasn't been populated yet (excluding the 'All' option)
+            if (judgeFilter.options.length <= 1) {
+                // Determine unique judges from the results
+                const uniqueJudges = new Map();
+                window.currentAdminData.results.forEach(res => {
+                    if (!uniqueJudges.has(res.judgeId)) {
+                        uniqueJudges.set(res.judgeId, res.judgeName);
+                    }
+                });
+
+                // Add unique judges to the dropdown
+                uniqueJudges.forEach((name, id) => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.innerText = name;
+                    judgeFilter.appendChild(option);
+                });
+            }
+
+            const selectedJudgeId = judgeFilter.value;
+
+            // Filter results based on the selection
+            const filteredResults = selectedJudgeId === 'all'
+                ? window.currentAdminData.results
+                : window.currentAdminData.results.filter(r => r.judgeId === selectedJudgeId);
+
+            if (filteredResults.length === 0) {
+                body.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 3rem; color:var(--text-secondary);">해당 심사위원의 심사 결과가 없습니다.</td></tr>`;
+                return;
+            }
+
+            filteredResults.forEach(res => {
                 const row = document.createElement('tr');
                 const mainName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
                 const subName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
@@ -85,11 +122,19 @@
             });
         }
 
+        // Add event listener to re-render when the filter changes
+        document.getElementById('judgeFilter').addEventListener('change', window.renderDashboard);
+
         document.getElementById('exportExcelBtn').addEventListener('click', () => {
-            if (window.currentAdminData.results.length === 0) return alert('데이터가 없습니다.');
+            const selectedJudgeId = document.getElementById('judgeFilter').value;
+            const filteredResults = selectedJudgeId === 'all'
+                ? window.currentAdminData.results
+                : window.currentAdminData.results.filter(r => r.judgeId === selectedJudgeId);
+
+            if (filteredResults.length === 0) return alert('추출할 데이터가 없습니다.');
 
             let csv = "\uFEFF일시,심사위원ID,심사위원성함,대분류,소분류,영상번호,영상제목,전략성,기술성,예술성,메시지전달력,성과대중성,심사평,총합\n";
-            window.currentAdminData.results.forEach(res => {
+            filteredResults.forEach(res => {
                 const s = res.scores || {};
                 const row = [
                     res.timestamp, res.judgeId, res.judgeName,
@@ -101,10 +146,14 @@
                 csv += row + "\n";
             });
 
+            const judgeNameForFile = selectedJudgeId === 'all'
+                ? 'All'
+                : filteredResults[0].judgeName.replace(/[^a-z0-9가-힣]/gi, '_'); // Regex to sanitize filename
+
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Judge_Results_${new Date().getTime()}.csv`;
+            link.download = `Judge_Results_${judgeNameForFile}_${new Date().getTime()}.csv`;
             link.click();
         });
 
