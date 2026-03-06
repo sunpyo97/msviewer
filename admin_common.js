@@ -159,7 +159,7 @@ function initAdminSidebar() {
 
     let menuHtml = `
         <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center;">
-            <img src="logo.png" alt="KODAF" style="height: 50px; max-width: 100%; object-fit: contain;">
+            <img src="logo.png" alt="KODAF" style="height: 65px; max-width: 100%; object-fit: contain;">
         </div>
         <nav class="sidebar-nav" style="padding-top: 1rem;">`;
     menuItems.forEach(item => {
