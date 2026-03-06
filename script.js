@@ -342,7 +342,7 @@ if (currentJudge) {
             // 탭이 1개이고 다른 부가 문서(신청서 등)가 있는 경우에도 탭을 보여줌
             const showForceTab = seriesItems.length === 1 && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile);
 
-            if (seriesItems.length > 1 || showForceTab) {
+            if (seriesItems.length >= 10 || showForceTab) {
                 // UI를 드롭다운(select)으로 변경
                 const selectEl = document.createElement('select');
                 selectEl.className = 'series-select';
@@ -368,7 +368,7 @@ if (currentJudge) {
                         if (item.type === 'folder' && item.children && item.children.length > 0) {
                             subPlaylistContainer.style.display = 'flex';
 
-                            if (item.children.length > 1) {
+                            if (item.children.length >= 10) {
                                 // 자식이 많을 경우 드롭다운(select)으로 렌더링
                                 const subSelectEl = document.createElement('select');
                                 subSelectEl.className = 'series-select sub-select';
@@ -389,7 +389,7 @@ if (currentJudge) {
 
                                 subPlaylistContainer.appendChild(subSelectEl);
                             } else {
-                                // 자식이 1개일 경우 그냥 버튼으로 렌더링
+                                // 자식이 10개 미만일 경우 그냥 버튼으로 렌더링
                                 item.children.forEach((child, cIdx) => {
                                     const subBtn = document.createElement('button');
                                     subBtn.className = `series-btn sub-tab ${cIdx === 0 ? 'active' : ''}`;
@@ -417,6 +417,73 @@ if (currentJudge) {
                 });
 
                 playlistContainer.appendChild(selectEl);
+            } else if (seriesItems.length > 1) {
+                // 10개 미만일 경우 원래대로 버튼 형태 렌더링
+                seriesItems.forEach((item, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = `series-btn ${idx === 0 ? 'active' : ''}`;
+
+                    // 폴더명이 있으면 [폴더명] 파일명, 없으면 파일명
+                    const label = item.folderName ? `📁 ${item.folderName}` : (item.name || `시리즈 ${idx + 1}`);
+                    btn.innerText = label;
+                    btn.title = item.name; // 전체 이름은 툴팁으로
+
+                    btn.onclick = () => {
+                        document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        // 하위 탭 처리
+                        if (subPlaylistContainer) {
+                            subPlaylistContainer.innerHTML = '';
+                            if (item.type === 'folder' && item.children && item.children.length > 0) {
+                                subPlaylistContainer.style.display = 'flex';
+
+                                if (item.children.length >= 10) {
+                                    const subSelectEl = document.createElement('select');
+                                    subSelectEl.className = 'series-select sub-select';
+                                    subSelectEl.style.cssText = 'padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; max-width: 100%; word-break: break-all; margin-top: 5px;';
+
+                                    item.children.forEach((child, cIdx) => {
+                                        const option = document.createElement('option');
+                                        option.value = cIdx;
+                                        option.innerText = child.name;
+                                        subSelectEl.appendChild(option);
+                                    });
+
+                                    subSelectEl.addEventListener('change', (e) => {
+                                        const cIdx = e.target.value;
+                                        const child = item.children[cIdx];
+                                        playSource(child.id, null, child.type);
+                                    });
+
+                                    subPlaylistContainer.appendChild(subSelectEl);
+                                } else {
+                                    item.children.forEach((child, cIdx) => {
+                                        const subBtn = document.createElement('button');
+                                        subBtn.className = `series-btn sub-tab ${cIdx === 0 ? 'active' : ''}`;
+                                        subBtn.style.fontSize = '0.75rem';
+                                        subBtn.style.padding = '3px 8px';
+                                        subBtn.innerText = child.name;
+                                        subBtn.onclick = () => {
+                                            subPlaylistContainer.querySelectorAll('.sub-tab').forEach(sb => sb.classList.remove('active'));
+                                            subBtn.classList.add('active');
+                                            playSource(child.id, null, child.type);
+                                        };
+                                        subPlaylistContainer.appendChild(subBtn);
+                                    });
+                                }
+                                // 첫 번째 자식 즉시 재생
+                                playSource(item.children[0].id, null, item.children[0].type);
+                            } else {
+                                subPlaylistContainer.style.display = 'none';
+                                playSource(item.id, null, item.type);
+                            }
+                        } else {
+                            playSource(item.id, null, item.type);
+                        }
+                    };
+                    playlistContainer.appendChild(btn);
+                });
             }
 
             // 첫 번째 아이템 즉시 재생 (초기 로드 시 하위 탭 대응)
@@ -427,7 +494,7 @@ if (currentJudge) {
                     subPlaylistContainer.innerHTML = '';
                     subPlaylistContainer.style.display = 'flex';
 
-                    if (first.children.length > 1) {
+                    if (first.children.length >= 10) {
                         const subSelectEl = document.createElement('select');
                         subSelectEl.className = 'series-select sub-select';
                         subSelectEl.style.cssText = 'padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; max-width: 100%; word-break: break-all; margin-top: 5px;';
@@ -489,7 +556,7 @@ if (currentJudge) {
                 if (fileData) {
                     const files = Array.isArray(fileData) ? fileData : [fileData];
 
-                    if (files.length > 1 && playlistContainer) {
+                    if (files.length >= 10 && playlistContainer) {
                         const selectEl = document.createElement('select');
                         selectEl.className = 'series-select';
                         selectEl.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: white; font-weight: 600; font-size: 0.9rem;';
@@ -507,6 +574,18 @@ if (currentJudge) {
                         });
 
                         playlistContainer.appendChild(selectEl);
+                    } else if (files.length > 1 && playlistContainer) {
+                        files.forEach((file, idx) => {
+                            const btn = document.createElement('button');
+                            btn.className = `series-btn ${idx === 0 ? 'active' : ''}`;
+                            btn.innerText = `시리즈 ${idx + 1}`;
+                            btn.onclick = () => {
+                                document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
+                                btn.classList.add('active');
+                                playSource(null, URL.createObjectURL(file), video.mainType === 'doc');
+                            };
+                            playlistContainer.appendChild(btn);
+                        });
                     } else if (playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
                         const btnMain = document.createElement('button');
                         btnMain.className = 'series-btn active';
