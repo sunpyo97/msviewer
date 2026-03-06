@@ -161,7 +161,6 @@ function initAdminSidebar() {
         <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border-color);">
             <div class="logo-box" style="padding: 8px 12px; gap: 8px; box-shadow: var(--shadow-sm); border: 1px solid #eee; background: white;">
                 <img src="logo.png" alt="KODAF" style="height: 24px;">
-                <span style="font-weight: 800; color: #000000; font-size: 14px; letter-spacing: -0.5px;">2026</span>
             </div>
         </div>
         <nav class="sidebar-nav" style="padding-top: 1rem;">`;
