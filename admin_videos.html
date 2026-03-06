@@ -274,7 +274,6 @@
             body.innerHTML = '';
 
             currentAdminData.videos.forEach((v, index) => {
-                const v = currentAdminData.videos[index];
                 const row = document.createElement('tr');
 
                 let categoryHtml = '';
@@ -284,10 +283,12 @@
                         const s = JUDGING_SCHEMA[c.main]?.sub[c.sub]?.name || c.sub;
                         return `<div style="font-size:0.75rem;">${m} > ${s}</div>`;
                     }).join('');
-                } else {
+                } else if (v.mainCat && v.subCat) {
                     const mainName = JUDGING_SCHEMA[v.mainCat]?.name || v.mainCat;
                     const subName = JUDGING_SCHEMA[v.mainCat]?.sub[v.subCat]?.name || v.subCat;
                     categoryHtml = `<div style="font-size:0.75rem;">${mainName} > ${subName}</div>`;
+                } else {
+                    categoryHtml = `<div style="font-size:0.75rem;">-</div>`;
                 }
 
                 let fileStatus = '';
