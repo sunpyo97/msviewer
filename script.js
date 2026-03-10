@@ -683,6 +683,27 @@ if (currentJudge) {
                     }
                 };
                 playlistContainer.appendChild(btnApp);
+
+                // 팝업 버튼 추가
+                const btnAppPop = document.createElement('button');
+                btnAppPop.className = 'series-btn popout-btn';
+                btnAppPop.innerHTML = `↗`;
+                btnAppPop.title = "새 창에서 열기";
+                btnAppPop.style.cssText = 'margin-left: 2px; border-color: #10b981; padding: 2px 8px; font-size: 14px;';
+                btnAppPop.onclick = async (e) => {
+                    e.stopPropagation();
+                    let url = '';
+                    if (video.appFormDriveId) {
+                        const match = video.appFormDriveId.match(/[-\w]{25,}/);
+                        const cleanId = match ? match[0] : video.appFormDriveId;
+                        url = `https://drive.google.com/file/d/${cleanId}/preview`;
+                    } else {
+                        const fileObj = await getVideoFile(video.id + '_appForm');
+                        if (fileObj) url = URL.createObjectURL(fileObj);
+                    }
+                    if (url) window.open(url, '_blank', 'width=1000,height=800');
+                };
+                playlistContainer.appendChild(btnAppPop);
             }
 
             if (video.addDescDriveId || video.addDescHasFile) {
@@ -701,6 +722,27 @@ if (currentJudge) {
                     }
                 };
                 playlistContainer.appendChild(btnDesc);
+
+                // 팝업 버튼 추가
+                const btnDescPop = document.createElement('button');
+                btnDescPop.className = 'series-btn popout-btn';
+                btnDescPop.innerHTML = `↗`;
+                btnDescPop.title = "새 창에서 열기";
+                btnDescPop.style.cssText = 'margin-left: 2px; border-color: #8b5cf6; padding: 2px 8px; font-size: 14px;';
+                btnDescPop.onclick = async (e) => {
+                    e.stopPropagation();
+                    let url = '';
+                    if (video.addDescDriveId) {
+                        const match = video.addDescDriveId.match(/[-\w]{25,}/);
+                        const cleanId = match ? match[0] : video.addDescDriveId;
+                        url = `https://drive.google.com/file/d/${cleanId}/preview`;
+                    } else {
+                        const fileObj = await getVideoFile(video.id + '_addDesc');
+                        if (fileObj) url = URL.createObjectURL(fileObj);
+                    }
+                    if (url) window.open(url, '_blank', 'width=1000,height=800');
+                };
+                playlistContainer.appendChild(btnDescPop);
             }
         }
         document.getElementById('judgeComment').value = '';
