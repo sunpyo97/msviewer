@@ -68,6 +68,10 @@
                     </div>
                     <span class="time" id="videoTime">00:00 / 00:00</span>
                 </div>
+                <!-- 워터마크 컨테이너를 플레이어 가장 마지막 레이어로 배치 (블로커 바로 아래) -->
+                <div class="watermark-container" id="watermark"
+                    style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 9998; overflow: hidden;">
+                </div>
             </div>
 
             <!-- 다중 영상(시리즈) 탭 영역 -->
