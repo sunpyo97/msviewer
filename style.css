@@ -686,20 +686,8 @@ body.secure-blur>* {
 }
 
 body.secure-blur {
-    background: #000000 !important;
-}
-
-body.secure-blur::before {
-    content: "보안 규정 위반 - 캡처 보호 활성화";
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #ff3b3b;
-    font-size: 2rem;
-    font-weight: 800;
-    z-index: 2147483647;
-    visibility: visible !important;
+    /* Prevent interaction while blurred */
+    pointer-events: none !important;
 }
 
 .security-blocker {

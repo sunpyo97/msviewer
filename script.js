@@ -1356,7 +1356,7 @@ function showSecurityAlert(msg) {
         font-weight: 700; text-align: center;
     `;
     toast.innerHTML = `<span style="color:#ff3b3b; font-weight:800;">[SECURITY ALERT]</span><br>${msg}`;
-    document.body.appendChild(toast);
+    document.documentElement.appendChild(toast); // <--- Append to HTML, not BODY
     setTimeout(() => toast.remove(), 4000);
 }
 
@@ -1394,7 +1394,7 @@ function blackoutScreen(msg) {
         <p style="color:#ccc; margin-top: 2rem; font-size: 1.1rem; user-select: none;">심사 화면으로 돌아가려면 화면 아무 곳이나 클릭하세요.</p>
         <button id="resumeBtn" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; pointer-events: auto;">심사 화면으로 복귀</button>
     `;
-    document.body.appendChild(blocker);
+    document.documentElement.appendChild(blocker); // <--- Append to HTML, not BODY
     const btn = blocker.querySelector('#resumeBtn');
     if (btn) btn.onclick = closeSecurity;
 }
