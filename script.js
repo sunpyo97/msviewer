@@ -859,11 +859,11 @@ if (currentJudge) {
 
                 item.style.left = left + '%';
                 item.style.top = top + '%';
-                // 모든 배경(특히 검정 PDF)에서 잘 보이도록 흰색 + 그림자 효과 적용
-                item.style.color = 'rgba(255, 255, 255, 0.4)';
-                item.style.fontSize = '18px';
-                item.style.fontWeight = 'bold';
-                item.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.8)'; // 그림자 추가로 가시성 극대화
+                // 흰색을 극대화하고 그림자를 강하게 주어 모든 배경에서 확실히 보이게 함
+                item.style.color = 'rgba(255, 255, 255, 0.9)';
+                item.style.fontSize = '24px';
+                item.style.fontWeight = '900';
+                item.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 1.0)';
                 item.style.pointerEvents = 'none';
                 item.style.whiteSpace = 'nowrap';
                 item.style.transform = `rotate(-25deg)`;
