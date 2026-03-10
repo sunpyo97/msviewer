@@ -1194,16 +1194,29 @@ function securityAction(msg) {
 window.addEventListener('blur', () => {
     if (document.activeElement && document.activeElement.id === 'documentViewer') return;
 
-    // 보안 팝업창이 열려 있고, 해당 창들이 아직 유효하다면 블러 처리 유예
-    const isAnyPopupOpen = openedPopups.some(p => !p.closed);
-    if (isAnyPopupOpen) {
-        console.log("Popup is focused, skipping main window blur.");
-        return;
-    }
+    // 타 브라우저나 다른 프로그램으로 이동했는지 확인하기 위해 아주 짧은 지연시간(100ms) 부여
+    setTimeout(() => {
+        // 우리가 연 보안 팝업창 중 하나라도 현재 '포커스'를 가지고 있다면 차단하지 않음
+        const isFocusOnPopup = openedPopups.some(p => {
+            try {
+                // p.document.hasFocus()는 동일 도메인(secure-viewer.html)에서만 작동합니다.
+                return p && !p.closed && p.document.hasFocus();
+            } catch (e) {
+                // 크로스 도메인 이슈나 기타 에러 시 안전하게 차단 대상으로 간주하지 않음 (이미 열린 창이므로)
+                return false;
+            }
+        });
 
-    document.body.classList.add('secure-blur');
-    const videoTag = document.getElementById('mainVideo');
-    if (videoTag) videoTag.pause();
+        if (isFocusOnPopup) {
+            console.log("Focus is on a trusted popup. Skipping blur.");
+            return;
+        }
+
+        // 팝업이 아닌 다른 곳(엑셀, 타 사이트 등)으로 이탈했다면 즉시 차단
+        document.body.classList.add('secure-blur');
+        const videoTag = document.getElementById('mainVideo');
+        if (videoTag) videoTag.pause();
+    }, 100);
 });
 
 window.addEventListener('focus', () => {

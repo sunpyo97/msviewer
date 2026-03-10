@@ -80,21 +80,25 @@
             }
         }
 
-        // 2. 워터마크 생성 (심사 화면과 동일 로직)
+        // 2. 워터마크 생성 (더 촘촘하고 잘 보이게 조정)
         function createWatermark() {
             const container = document.getElementById('watermark');
             const dateStr = new Date().toLocaleDateString();
-            for (let i = 0; i < 20; i++) {
+            // 개수를 늘리고 색상을 조금 더 진하게 조정
+            for (let i = 0; i < 40; i++) {
                 const item = document.createElement('div');
                 item.className = 'watermark-item dynamic-float';
                 item.innerText = `${judgeName} | 보안 문서 | ${dateStr}`;
                 item.style.position = 'absolute';
-                item.style.left = Math.random() * 90 + '%';
-                item.style.top = Math.random() * 95 + '%';
-                item.style.color = 'rgba(255, 255, 255, 0.15)';
-                item.style.fontSize = '14px'; item.style.fontWeight = 'bold';
-                item.style.pointerEvents = 'none'; item.style.whiteSpace = 'nowrap';
+                item.style.left = (Math.random() * 90) + '%';
+                item.style.top = (Math.random() * 95) + '%';
+                item.style.color = 'rgba(200, 200, 200, 0.25)'; // 색상 가독성 향상
+                item.style.fontSize = '16px';
+                item.style.fontWeight = '700';
+                item.style.pointerEvents = 'none';
+                item.style.whiteSpace = 'nowrap';
                 item.style.transform = `rotate(-25deg)`;
+                item.style.zIndex = '1000';
                 container.appendChild(item);
             }
         }
@@ -106,13 +110,7 @@
             if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'p' || e.key === 's')) e.preventDefault();
         });
 
-        // 4. 포커스 이탈 시 블러 처리 (보안 강화)
-        window.addEventListener('blur', () => {
-            document.body.style.filter = 'blur(40px) brightness(0.2)';
-        });
-        window.addEventListener('focus', () => {
-            document.body.style.filter = 'none';
-        });
+        // 팝업창은 포커스를 잃어도 항상 보여야 하므로 blur 이벤트에 블러 처리를 하지 않음
 
         // 메인 창이 닫히면 함께 닫히도록 설정 (필요 시)
         window.addEventListener('message', (e) => {
