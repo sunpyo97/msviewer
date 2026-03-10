@@ -716,22 +716,22 @@ body.secure-blur::before {
 @keyframes watermark-float {
     0% {
         transform: translate(0, 0) rotate(-25deg);
-        opacity: 0.6;
+        opacity: 0.1;
     }
 
     33% {
         transform: translate(50px, 80px) rotate(-20deg);
-        opacity: 0.9;
+        opacity: 0.3;
     }
 
     66% {
         transform: translate(-40px, 40px) rotate(-30deg);
-        opacity: 0.8;
+        opacity: 0.2;
     }
 
     100% {
         transform: translate(0, 0) rotate(-25deg);
-        opacity: 0.6;
+        opacity: 0.1;
     }
 }
 

@@ -883,8 +883,8 @@ if (currentJudge) {
                 item.style.left = left + '%';
                 item.style.top = top + '%';
 
-                // 팝업보다 더 선명하게 (사용자 요청 반영: 더 흰색)
-                item.style.color = 'rgba(255, 255, 255, 0.9)';
+                // 심사에 방해되지 않도록 훨씬 투명하게 조정
+                item.style.color = 'rgba(255, 255, 255, 0.3)';
                 item.style.fontSize = '18px';
                 item.style.fontWeight = '700';
                 item.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.8)';
