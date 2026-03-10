@@ -907,7 +907,6 @@ if (currentJudge) {
             container.appendChild(item);
         }
     }
-    console.log(`KODAF Security: ${count} watermark items created.`);
 
     if (window.watermarkInterval) clearInterval(window.watermarkInterval);
 }
