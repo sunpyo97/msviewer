@@ -1198,7 +1198,6 @@ if (myScoresBtn && myScoresModal) {
         document.body.removeChild(link);
     });
 }
-}
 
 // === 보안 강화 로직 ===
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -1259,11 +1258,6 @@ function securityAction(msg) {
 
 window.addEventListener('blur', () => {
     if (document.activeElement && document.activeElement.id === 'documentViewer') return;
-
-    // 0ms 즉시 실행: 지연 시간을 완전히 제거하여 Snipping Tool이 동작하기 전에 차단
-    // 팝업창 포커스 여부를 동기적으로 확인 가능한 방법 동원
-
-    // 1. 팝업창 포커스 여부 (동기적 체크)
     if (isPopupFocused) return;
 
     const isFocusOnPopupByDoc = openedPopups.some(p => {
@@ -1271,9 +1265,16 @@ window.addEventListener('blur', () => {
     });
     if (isFocusOnPopupByDoc) return;
 
-    // 2. 즉시 블랙아웃 실행
-    console.log("Security: Focus lost. Extreme instant blackout activated.");
     securityAction("보안 위반: 외부 프로그램 감지 또는 포커스 이탈로 화면이 차단되었습니다.");
+});
+
+// 마우스가 브라우저 창 밖으로 나가는 순간 선제적으로 차단 (캡처 도구 실행 전 단계 방어)
+document.addEventListener('mouseleave', () => {
+    // 팝업창이 떠 있는 상태라면 예외 처리 (오탐 방지)
+    if (openedPopups.some(p => p && !p.closed)) return;
+
+    // 즉각적인 블러 및 경고 (블랙아웃까지는 아니더라도 콘텐츠 식별 불가하게 처리)
+    document.body.classList.add('secure-blur');
 });
 
 window.addEventListener('focus', () => {
