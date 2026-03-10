@@ -12,10 +12,6 @@
 </head>
 
 <body class="dark-theme">
-    <div class="watermark-container" id="watermark">
-        <!-- JS will populate dynamic watermark -->
-    </div>
-
     <header class="top-bar"
         style="background: rgba(255, 255, 255, 0.95); box-shadow: 0 1px 10px rgba(0,0,0,0.05); border-bottom: 1px solid var(--border-color);">
         <div class="logo-box"
@@ -40,6 +36,11 @@
     <main class="main-content">
         <section class="viewer-section">
             <div class="player-wrapper" style="position: relative;">
+                <!-- 워터마크 컨테이너를 플레이어 내부로 이동 -->
+                <div class="watermark-container" id="watermark"
+                    style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 50; overflow: hidden;">
+                </div>
+
                 <video id="mainVideo" class="video-placeholder" controls
                     style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
                 <!-- 문서 뷰어 (PDF/PPT 구글 Preview) -->

@@ -55,13 +55,13 @@
 
         /* 워터마크 스타일 */
         .watermark-container {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1000;
+            z-index: 50;
             overflow: hidden;
         }
 
@@ -94,8 +94,9 @@
 </head>
 
 <body>
-    <div class="watermark-container" id="watermark"></div>
     <div class="viewer-container">
+        <!-- 워터마크 컨테이너를 뷰어 내부로 이동 -->
+        <div class="watermark-container" id="watermark"></div>
         <iframe id="secureIframe"></iframe>
         <div class="ui-blocker" title="보안을 위해 외부 링크 기능이 차단되었습니다."></div>
         <div class="secure-overlay"></div>
