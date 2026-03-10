@@ -859,8 +859,8 @@ if (currentJudge) {
 
                 item.style.left = left + '%';
                 item.style.top = top + '%';
-                item.style.color = 'rgba(255, 255, 255, 0.1)';
-                item.style.fontSize = '13px';
+                item.style.color = 'rgba(255, 255, 255, 0.25)'; // 기존 0.1에서 0.25로 상향
+                item.style.fontSize = '16px'; // 기존 13px에서 16px로 상향
                 item.style.fontWeight = 'bold';
                 item.style.pointerEvents = 'none';
                 item.style.whiteSpace = 'nowrap';

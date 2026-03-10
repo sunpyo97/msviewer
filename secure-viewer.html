@@ -118,25 +118,36 @@
             }
         }
 
-        // 2. 워터마크 생성 (가독성을 극대화하기 위해 개수를 약 7개로 대폭 축소)
+        // 2. 워터마크 생성 (격자 배치를 통해 겹침 방지 및 가시성 개선)
         function createWatermark() {
             const container = document.getElementById('watermark');
             const dateStr = new Date().toLocaleDateString();
-            for (let i = 0; i < 7; i++) {
-                const item = document.createElement('div');
-                item.className = 'watermark-item dynamic-float';
-                item.innerText = `${judgeName} | 보안 문서 | ${dateStr}`;
-                item.style.position = 'absolute';
-                item.style.left = (Math.random() * 90) + '%';
-                item.style.top = (Math.random() * 95) + '%';
-                item.style.color = 'rgba(200, 200, 200, 0.25)';
-                item.style.fontSize = '16px';
-                item.style.fontWeight = '700';
-                item.style.pointerEvents = 'none';
-                item.style.whiteSpace = 'nowrap';
-                item.style.transform = `rotate(-25deg)`;
-                item.style.zIndex = '1000';
-                container.appendChild(item);
+
+            const rows = 4;
+            const cols = 3;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const item = document.createElement('div');
+                    item.className = 'watermark-item dynamic-float';
+                    item.innerText = `${judgeName} | 보안 문서 | ${dateStr}`;
+                    item.style.position = 'absolute';
+
+                    // 격자 위치 계산
+                    const left = (c * (100 / cols)) + (Math.random() * 10) + 5;
+                    const top = (r * (100 / rows)) + (Math.random() * 10) + 5;
+
+                    item.style.left = left + '%';
+                    item.style.top = top + '%';
+                    item.style.color = 'rgba(220, 220, 220, 0.3)'; // 기존보다 약간 더 선명하게
+                    item.style.fontSize = '17px'; // 기존 16px에서 17px로 상향
+                    item.style.fontWeight = '700';
+                    item.style.pointerEvents = 'none';
+                    item.style.whiteSpace = 'nowrap';
+                    item.style.transform = `rotate(-25deg)`;
+                    item.style.zIndex = '1000';
+                    container.appendChild(item);
+                }
             }
         }
         createWatermark();
