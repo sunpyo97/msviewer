@@ -686,8 +686,7 @@ body.secure-blur>* {
 }
 
 body.secure-blur {
-    /* Prevent interaction while blurred */
-    pointer-events: none !important;
+    background: #000000 !important;
 }
 
 .security-blocker {

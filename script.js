@@ -1282,14 +1282,9 @@ window.addEventListener('keyup', (e) => {
 }, true);
 
 function securityAction(msg) {
-    // 1. 즉각적인 시각적 차단 (포인터 이벤트도 즉시 차단)
     document.body.classList.add('secure-blur');
-    document.body.style.pointerEvents = 'none';
-
     const videoTag = document.getElementById('mainVideo');
     if (videoTag) videoTag.pause();
-
-    // 2. 동기적으로 블랙아웃 레이어 생성 및 메시지 전달
     blackoutScreen(msg);
 }
 
@@ -1325,7 +1320,6 @@ window.addEventListener('focus', () => {
 
     // 포커스가 돌아오면 포인터 이벤트는 복구하되, 
     // 블랙아웃 화면(.security-blocker)은 사용자가 "직접 클릭해서" 해제하도록 유지합니다.
-    document.body.style.pointerEvents = 'auto';
 
     if (!document.querySelector('.security-blocker')) {
         document.body.classList.remove('secure-blur');
@@ -1378,9 +1372,6 @@ function blackoutScreen(msg) {
         if (e) e.stopPropagation();
         blocker.remove();
         document.body.classList.remove('secure-blur');
-        document.body.style.pointerEvents = 'auto';
-
-        // 블랙아웃 화면을 클릭해서 닫은 "직후에" 보안 경고 토스트 메시지 띄우기
         if (msg) showSecurityAlert(msg);
         console.log("Security: User returned to judging.");
     };
