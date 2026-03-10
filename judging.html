@@ -12,35 +12,6 @@
 </head>
 
 <body class="dark-theme">
-    <div id="debugConsole"
-        style="position: fixed; bottom: 0; left: 0; width: 100%; height: 250px; padding: 10px; background: rgba(0,0,0,0.85); color: #0f0; font-family: monospace; font-size: 13px; z-index: 2147483647; overflow-y: scroll; pointer-events: none;">
-        <div style="color: yellow; font-weight: bold; border-bottom: 1px solid #555; margin-bottom: 5px;">KODAF DEBUG
-            CONSOLE (FOR DEV)</div>
-    </div>
-    <script>
-        window.onerror = function (msg, url, line, col, error) {
-            document.getElementById('debugConsole').innerHTML += `<div style="color:red">[ERROR] ${msg} (${line}:${col})</div>`;
-        };
-        window.onunhandledrejection = function (event) {
-            document.getElementById('debugConsole').innerHTML += `<div style="color:red">[PROMISE] ${event.reason}</div>`;
-        };
-        const oldLog = console.log;
-        console.log = function (...args) {
-            oldLog.apply(console, args);
-            document.getElementById('debugConsole').innerHTML += `<div>[LOG] ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}</div>`;
-        };
-        const oldWarn = console.warn;
-        console.warn = function (...args) {
-            oldWarn.apply(console, args);
-            document.getElementById('debugConsole').innerHTML += `<div style="color:yellow">[WARN] ${args.join(' ')}</div>`;
-        };
-        const oldErr = console.error;
-        console.error = function (...args) {
-            oldErr.apply(console, args);
-            document.getElementById('debugConsole').innerHTML += `<div style="color:red; font-weight:bold;">[ERR] ${args.join(' ')}</div>`;
-        };
-    </script>
-
     <header class="top-bar"
         style="background: rgba(255, 255, 255, 0.95); box-shadow: 0 1px 10px rgba(0,0,0,0.05); border-bottom: 1px solid var(--border-color);">
         <div class="logo-box"
@@ -176,7 +147,6 @@
 
     <script src="firebase-config.js"></script>
     <script src="video-db.js"></script>
-    <script src="script.js?v=1.6"></script>
 
     <!-- 내 심사 결과 모달 -->
     <div id="myScoresModal" class="modal"
@@ -219,6 +189,8 @@
             <p style="font-size: 0.8rem; color: #666; margin-top: 15px;">* 작품명을 클릭하면 해당 작품 심사 화면으로 이동합니다.</p>
         </div>
     </div>
+    <!-- Main Script always runs AFTER all UI elements are loaded -->
+    <script src="script.js?v=1.7"></script>
 </body>
 
 </html>
