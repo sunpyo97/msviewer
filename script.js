@@ -19,6 +19,13 @@ console.log("KODAF script.js: Session check result:", currentJudge);
 // 만약 세션이 없다면 (alert 후 redirect 중), 하위 스크립트 실행을 방지하여 에러 페이지가 남는 것을 막음.
 if (currentJudge) {
     console.log("KODAF script.js: Starting main logic for judge:", currentJudge.name);
+
+    // 심사위원 이름 즉시 렌더링 (Firebase 로딩 대기 상관 없이)
+    const userNameElement = document.querySelector('.user-name');
+    if (userNameElement) {
+        userNameElement.innerText = `심사위원: ${currentJudge.name}`;
+    }
+
     let currentData = { judges: [], videos: [], results: [] };
 
     function getStoredData() {
@@ -178,12 +185,6 @@ if (currentJudge) {
     // UI 초기화 함수 (데이터 형식 유연성 확보)
     function initUI() {
         if (!currentJudge) return;
-
-        // 성함 정보 즉시 표시
-        const userNameElement = document.querySelector('.user-name');
-        if (userNameElement) {
-            userNameElement.innerText = `심사위원: ${currentJudge.name}`;
-        }
 
         // 카테고리 구성 (데이터 로드 완료 여부 체크)
         if (window.currentData) {
