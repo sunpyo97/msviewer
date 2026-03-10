@@ -11,15 +11,22 @@ window._isDialogOpen = false;
     const _origPrompt = window.prompt.bind(window);
     window.alert = function (msg) {
         window._isDialogOpen = true;
-        try { return _origAlert(msg); } finally { window._isDialogOpen = false; }
+        try { return _origAlert(msg); } finally {
+            // 브라우저 blur 이벤트가 비동기로 올 수 있으므로 약간 지연 후 해제
+            setTimeout(() => { window._isDialogOpen = false; }, 100);
+        }
     };
     window.confirm = function (msg) {
         window._isDialogOpen = true;
-        try { return _origConfirm(msg); } finally { window._isDialogOpen = false; }
+        try { return _origConfirm(msg); } finally {
+            setTimeout(() => { window._isDialogOpen = false; }, 100);
+        }
     };
     window.prompt = function (msg, def) {
         window._isDialogOpen = true;
-        try { return _origPrompt(msg, def); } finally { window._isDialogOpen = false; }
+        try { return _origPrompt(msg, def); } finally {
+            setTimeout(() => { window._isDialogOpen = false; }, 100);
+        }
     };
 })();
 // ===== 다이얼로그 보안 예외 처리 끝 =====
@@ -1310,6 +1317,8 @@ let isSecurityLocked = false;
 
 function securityAction(msg) {
     if (isSecurityLocked) return; // 이미 잠금 중이면 중복 호출 무시
+    // alert/confirm/prompt 다이얼로그로 인한 보안 동작 제외
+    if (window._isDialogOpen) return;
     isSecurityLocked = true;
     document.body.classList.add('secure-blur');
     const videoTag = document.getElementById('mainVideo');
@@ -1334,6 +1343,8 @@ window.addEventListener('blur', () => {
 // 마우스가 브라우저 창 밖으로 나가면 화면 둥북 (blur버튼 누르기 전 선제 방어)
 document.addEventListener('mouseleave', () => {
     if (isSecurityLocked) return;
+    // alert/confirm/prompt 다이얼로그로 인한 마우스 이탈 제외
+    if (window._isDialogOpen) return;
     const _openedPopups = window.openedPopups || [];
     if (_openedPopups.some(p => p && !p.closed)) return;
     document.body.classList.add('secure-blur');
