@@ -118,18 +118,18 @@
             }
         }
 
-        // 2. 워터마크 생성 (더 촘촘하고 잘 보이게 조정)
+        // 2. 워터마크 생성 (가독성을 위해 적절한 개수로 조정)
         function createWatermark() {
             const container = document.getElementById('watermark');
             const dateStr = new Date().toLocaleDateString();
-            for (let i = 0; i < 45; i++) {
+            for (let i = 0; i < 15; i++) {
                 const item = document.createElement('div');
                 item.className = 'watermark-item dynamic-float';
                 item.innerText = `${judgeName} | 보안 문서 | ${dateStr}`;
                 item.style.position = 'absolute';
                 item.style.left = (Math.random() * 90) + '%';
                 item.style.top = (Math.random() * 95) + '%';
-                item.style.color = 'rgba(220, 220, 220, 0.35)'; // 가독성 있게 더 진하게 조정
+                item.style.color = 'rgba(200, 200, 200, 0.25)'; // 적절한 투명도
                 item.style.fontSize = '16px';
                 item.style.fontWeight = '700';
                 item.style.pointerEvents = 'none';
