@@ -859,10 +859,11 @@ if (currentJudge) {
 
                 item.style.left = left + '%';
                 item.style.top = top + '%';
-                // 배경색에 상관없이 잘 보이도록 어두운 회색톤으로 변경 (기존 흰색 0.25 -> 회색 0.15)
-                item.style.color = 'rgba(80, 80, 80, 0.15)';
-                item.style.fontSize = '18px'; // 조금 더 키움
+                // 모든 배경(특히 검정 PDF)에서 잘 보이도록 흰색 + 그림자 효과 적용
+                item.style.color = 'rgba(255, 255, 255, 0.4)';
+                item.style.fontSize = '18px';
                 item.style.fontWeight = 'bold';
+                item.style.textShadow = '1px 1px 2px rgba(0, 0, 0, 0.8)'; // 그림자 추가로 가시성 극대화
                 item.style.pointerEvents = 'none';
                 item.style.whiteSpace = 'nowrap';
                 item.style.transform = `rotate(-25deg)`;
