@@ -1289,9 +1289,8 @@ function securityAction(msg) {
     const videoTag = document.getElementById('mainVideo');
     if (videoTag) videoTag.pause();
 
-    // 2. 동기적으로 블랙아웃 레이어 생성 (setTimeout 제거)
-    blackoutScreen();
-    showSecurityAlert(msg);
+    // 2. 동기적으로 블랙아웃 레이어 생성 및 메시지 전달
+    blackoutScreen(msg);
 }
 
 window.addEventListener('blur', () => {
@@ -1344,14 +1343,18 @@ document.addEventListener('visibilitychange', () => {
 function showSecurityAlert(msg) {
     const toast = document.createElement('div');
     toast.className = 'security-toast';
-    toast.style.background = '#000';
-    toast.style.border = '2px solid #ff3b3b';
+    toast.style.cssText = `
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        background: #000; border: 2px solid #ff3b3b; color: white;
+        padding: 12px 24px; border-radius: 8px; z-index: 2147483647 !important;
+        font-weight: 700; text-align: center;
+    `;
     toast.innerHTML = `<span style="color:#ff3b3b; font-weight:800;">[SECURITY ALERT]</span><br>${msg}`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
 }
 
-function blackoutScreen() {
+function blackoutScreen(msg) {
     if (document.querySelector('.security-blocker')) return;
     const blocker = document.createElement('div');
     blocker.className = 'security-blocker';
@@ -1370,8 +1373,9 @@ function blackoutScreen() {
         blocker.remove();
         document.body.classList.remove('secure-blur');
         document.body.style.pointerEvents = 'auto';
-        const toast = document.querySelector('.security-toast');
-        if (toast) toast.remove();
+
+        // 블랙아웃 화면을 클릭해서 닫은 "직후에" 보안 경고 토스트 메시지 띄우기
+        if (msg) showSecurityAlert(msg);
         console.log("Security: User returned to judging.");
     };
 
