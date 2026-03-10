@@ -859,8 +859,9 @@ if (currentJudge) {
 
                 item.style.left = left + '%';
                 item.style.top = top + '%';
-                item.style.color = 'rgba(255, 255, 255, 0.25)'; // 기존 0.1에서 0.25로 상향
-                item.style.fontSize = '16px'; // 기존 13px에서 16px로 상향
+                // 배경색에 상관없이 잘 보이도록 어두운 회색톤으로 변경 (기존 흰색 0.25 -> 회색 0.15)
+                item.style.color = 'rgba(80, 80, 80, 0.15)';
+                item.style.fontSize = '18px'; // 조금 더 키움
                 item.style.fontWeight = 'bold';
                 item.style.pointerEvents = 'none';
                 item.style.whiteSpace = 'nowrap';
@@ -868,7 +869,9 @@ if (currentJudge) {
                 container.appendChild(item);
             }
         }
-        setInterval(animateWatermarks, 2000);
+        // 기존에 있던 타이머가 중복되지 않게 예외처리 (필요시)
+        if (window.watermarkInterval) clearInterval(window.watermarkInterval);
+        window.watermarkInterval = setInterval(animateWatermarks, 2000);
     }
 
     function animateWatermarks() {
@@ -938,6 +941,7 @@ if (currentJudge) {
     const onDataLoaded = () => {
         console.log("Firebase Data Loaded. Initializing UI Components...");
         initUI();
+        createWatermark(); // 데이터 로드 후 워터마크 생성
         const mainCat = document.getElementById('mainCategorySelect').value;
         const subCat = document.getElementById('subCategorySelect').value;
         if (mainCat && subCat) {
