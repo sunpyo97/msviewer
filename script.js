@@ -416,19 +416,30 @@ if (currentJudge) {
                     // 이미지, PPT, 문서 등 모든 파일은 /preview 형식을 사용합니다.
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 }
-                iframeTag.style.cssText = 'display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 9999;';
+                iframeTag.onload = () => {
+                    console.log("KODAF Security: Iframe loaded, refreshing watermark.");
+                    createWatermark();
+                };
+                // 워터마크(9998)보다 아래에 위치하도록 z-index 조정 (9999 -> 10)
+                iframeTag.style.cssText = 'display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 10;';
             } else if (isLocalObj) {
                 if (type === 'doc' || type === 'image') {
                     iframeTag.src = isLocalObj;
-                    iframeTag.style.cssText = 'display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 9999;';
+                    iframeTag.onload = () => createWatermark();
+                    // 워터마크(9998)보다 아래에 위치하도록 z-index 조정 (9999 -> 10)
+                    iframeTag.style.cssText = 'display: block !important; position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; z-index: 10;';
                 } else {
                     if (playerControls) playerControls.style.display = 'flex';
                     videoTag.src = isLocalObj;
+                    videoTag.onloadeddata = () => createWatermark();
                     videoTag.load();
                     videoTag.style.cssText = 'display: block !important; width: 100%; height: 100%; object-fit: contain;';
                     iframeTag.style.zIndex = '0';
                 }
             }
+            // 콘텐츠 로드 시작 시점에 한 번 더 생성 (지연 로딩 대비)
+            setTimeout(createWatermark, 100);
+            setTimeout(createWatermark, 1000);
         };
 
         const isDocType = video.mainType === 'doc';
@@ -837,9 +848,19 @@ if (currentJudge) {
 
     // 워터마크 생성 (팝업과 동일한 로직 및 스타일로 동기화)
     function createWatermark() {
+        console.log("KODAF Security: Creating Watermarks...");
         const container = document.getElementById('watermark');
-        if (!container) return;
+        if (!container) {
+            console.error("KODAF Security Error: Watermark container not found!");
+            return;
+        }
         container.innerHTML = '';
+
+        // DOM 순서상 가장 뒤로 이동하여 가장 위에 그려지도록 함
+        const parent = container.parentElement;
+        if (parent && parent.lastElementChild !== container) {
+            parent.appendChild(container);
+        }
 
         // currentJudge가 없을 경우를 대비한 기본 이름
         const judgeName = (currentJudge && currentJudge.name) ? currentJudge.name : '심사위원';
@@ -862,11 +883,11 @@ if (currentJudge) {
                 item.style.left = left + '%';
                 item.style.top = top + '%';
 
-                // 팝업과 유사하게 투명도와 크기 조정 (시인성 확보)
-                item.style.color = 'rgba(255, 255, 255, 0.4)';
+                // 팝업보다 더 선명하게 (사용자 요청 반영: 더 흰색)
+                item.style.color = 'rgba(255, 255, 255, 0.7)';
                 item.style.fontSize = '18px';
                 item.style.fontWeight = '700';
-                item.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
+                item.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.8)';
                 item.style.pointerEvents = 'none';
                 item.style.whiteSpace = 'nowrap';
                 item.style.transform = `rotate(-25deg)`;
@@ -875,6 +896,7 @@ if (currentJudge) {
                 container.appendChild(item);
             }
         }
+        console.log(`KODAF Security: ${rows * cols} watermark items created.`);
 
         if (window.watermarkInterval) clearInterval(window.watermarkInterval);
     }
