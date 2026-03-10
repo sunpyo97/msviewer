@@ -1281,7 +1281,12 @@ window.addEventListener('keyup', (e) => {
     }
 }, true);
 
+// === 보안 잠금 코어 ===
+let isSecurityLocked = false;
+
 function securityAction(msg) {
+    if (isSecurityLocked) return; // 이미 잠금 중이면 중복 호출 무시
+    isSecurityLocked = true;
     document.body.classList.add('secure-blur');
     const videoTag = document.getElementById('mainVideo');
     if (videoTag) videoTag.pause();
@@ -1291,37 +1296,30 @@ function securityAction(msg) {
 window.addEventListener('blur', () => {
     if (document.activeElement && document.activeElement.id === 'documentViewer') return;
     if (isPopupFocused) return;
-
     const isFocusOnPopupByDoc = openedPopups.some(p => {
         try { return p && !p.closed && p.document.hasFocus(); } catch (e) { return false; }
     });
     if (isFocusOnPopupByDoc) return;
-
     securityAction("보안 위반: 외부 프로그램 감지 또는 포커스 이탈로 화면이 차단되었습니다.");
 });
 
-// 마우스가 브라우저 창 밖으로 나가는 순간 선제적으로 차단 (캡처 도구 실행 전 단계 방어)
+// 마우스가 브라우저 창 밖으로 나가면 화면 둥북 (blur버튼 누르기 전 선제 방어)
 document.addEventListener('mouseleave', () => {
-    // 팝업창이 떠 있는 상태라면 예외 처리 (오탐 방지)
+    if (isSecurityLocked) return;
     if (openedPopups.some(p => p && !p.closed)) return;
     document.body.classList.add('secure-blur');
 });
 
-// 마우스가 다시 창 안으로 들어오면 블러 해제
+// 마우스가 다시 보안 수준 완화
 document.addEventListener('mouseenter', () => {
-    // 블랙아웃 스크린이 없을 때만 블러 해제 (보안 위반 상태가 아닐 때만)
-    if (!document.querySelector('.security-blocker')) {
-        document.body.classList.remove('secure-blur');
-    }
+    if (isSecurityLocked) return;
+    document.body.classList.remove('secure-blur');
 });
 
 window.addEventListener('focus', () => {
-    isPopupFocused = false; // 메인 창으로 돌아오면 팝업 포커스 상태 초기화
-
-    // 포커스가 돌아오면 포인터 이벤트는 복구하되, 
-    // 블랙아웃 화면(.security-blocker)은 사용자가 "직접 클릭해서" 해제하도록 유지합니다.
-
-    if (!document.querySelector('.security-blocker')) {
+    isPopupFocused = false;
+    // 보안 잠금 중에는 포커스가 돌아와도 화면을 풀지 않음
+    if (!isSecurityLocked) {
         document.body.classList.remove('secure-blur');
     }
 });
@@ -1370,6 +1368,7 @@ function blackoutScreen(msg) {
 
     const closeSecurity = (e) => {
         if (e) e.stopPropagation();
+        isSecurityLocked = false; // 잠금 해제
         blocker.remove();
         document.body.classList.remove('secure-blur');
         if (msg) showSecurityAlert(msg);
