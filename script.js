@@ -866,8 +866,8 @@ if (currentJudge) {
         const judgeName = (currentJudge && currentJudge.name) ? currentJudge.name : '심사위원';
         const dateStr = new Date().toLocaleDateString();
 
-        const rows = 3;
-        const cols = 3;
+        const rows = 5;
+        const cols = 4;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
@@ -1281,6 +1281,13 @@ window.addEventListener('blur', () => {
 window.addEventListener('focus', () => {
     isPopupFocused = false; // 메인 창으로 돌아오면 팝업 포커스 상태 초기화
     document.body.classList.remove('secure-blur');
+    document.body.style.pointerEvents = 'auto';
+
+    // 포커스가 돌아오면 블랙아웃 레이어 제거 (사용자 편의)
+    const blocker = document.querySelector('.security-blocker');
+    if (blocker) blocker.remove();
+    const toast = document.querySelector('.security-toast');
+    if (toast) toast.remove();
 });
 
 document.addEventListener('touchstart', (e) => {
@@ -1317,10 +1324,10 @@ function blackoutScreen() {
     blocker.style.width = '100vw'; blocker.style.height = '100vh';
     blocker.innerHTML = `
         <div style="font-size: 5rem; margin-bottom: 2rem;">✋</div>
-        <h2 style="color:white; font-size: 2.5rem; margin-bottom: 1rem;">보안 규정 위반 감지</h2>
-        <p style="color:#ff3b3b; font-size: 1.2rem; font-weight: 700;">비인가 동작(캡처/복사 등)이 감지되어 시스템이 강력 차단되었습니다.</p>
-        <p style="color:#666; margin-top: 2rem;">심사 세션을 다시 시작하려면 아래 버튼을 클릭하세요.</p>
-        <button onclick="location.reload()" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s;">시스템 재시작</button>
+        <h2 style="color:white; font-size: 2.5rem; margin-bottom: 1rem;">보안 보호 모드 활성화</h2>
+        <p style="color:#ff3b3b; font-size: 1.2rem; font-weight: 700;">비인가 동작 또는 포커스 이탈이 감지되어 화면이 보호되었습니다.</p>
+        <p style="color:#666; margin-top: 2rem;">심사 화면으로 돌아가려면 화면을 클릭하거나 아래 버튼을 누르세요.</p>
+        <button onclick="this.parentElement.remove(); document.body.classList.remove('secure-blur'); document.body.style.pointerEvents='auto';" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s;">심사 화면으로 복귀</button>
     `;
     document.body.appendChild(blocker);
 }
