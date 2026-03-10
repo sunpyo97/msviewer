@@ -1323,28 +1323,33 @@ function blackoutScreen() {
         top: 0; left: 0;
         width: 100vw; height: 100vh;
         background: #000000 !important;
-        pointer-events: auto !important; /* 클릭 가능하도록 강제 */
+        pointer-events: auto !important;
         cursor: pointer;
     `;
 
-    const closeSecurity = () => {
+    const closeSecurity = (e) => {
+        if (e) e.stopPropagation();
         blocker.remove();
         document.body.classList.remove('secure-blur');
         document.body.style.pointerEvents = 'auto';
         const toast = document.querySelector('.security-toast');
         if (toast) toast.remove();
+        console.log("Security: User returned to judging.");
     };
 
     blocker.onclick = closeSecurity;
 
     blocker.innerHTML = `
-        <div style="font-size: 5rem; margin-bottom: 2rem;">✋</div>
-        <h2 style="color:white; font-size: 2.5rem; margin-bottom: 1rem;">보안 보호 모드 활성화</h2>
-        <p style="color:#ff3b3b; font-size: 1.2rem; font-weight: 700;">비인가 동작 또는 포커스 이탈이 감지되어 화면이 보호되었습니다.</p>
-        <p style="color:#ccc; margin-top: 2rem; font-size: 1.1rem;">심사 화면으로 돌아가려면 화면 아무 곳이나 클릭하거나 아래 버튼을 누르세요.</p>
-        <button onclick="event.stopPropagation();" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; pointer-events: auto;">심사 화면으로 복귀</button>
+        <div style="font-size: 5rem; margin-bottom: 2rem; user-select: none;">✋</div>
+        <h2 style="color:white; font-size: 2.5rem; margin-bottom: 1rem; user-select: none;">보안 보호 모드 활성화</h2>
+        <p style="color:#ff3b3b; font-size: 1.2rem; font-weight: 700; user-select: none;">비인가 동작 또는 포커스 이탈이 감지되어 화면이 보호되었습니다.</p>
+        <p style="color:#ccc; margin-top: 2rem; font-size: 1.1rem; user-select: none;">심사 화면으로 돌아가려면 화면 아무 곳이나 클릭하세요.</p>
+        <button id="resumeBtn" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; pointer-events: auto;">심사 화면으로 복귀</button>
     `;
     document.body.appendChild(blocker);
+    const btn = blocker.querySelector('#resumeBtn');
+    if (btn) btn.onclick = closeSecurity;
 }
 
 console.log("KODAF 2026 High-Security Engine Initialized.");
+} // <--- if (currentJudge) { 블록 닫기
