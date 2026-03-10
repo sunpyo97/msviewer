@@ -164,13 +164,11 @@ if (currentJudge) {
                 mainSelect.innerHTML = '<option>데이터 로딩 중...</option>';
             }
         }
-
-        // 레이아웃 토글 설정 초기화
-        initLayoutSettings();
     }
 
     // 레이아웃 토글 로직
     function initLayoutSettings() {
+        console.log("Initializing Layout Settings...");
         const toggleWideBtn = document.getElementById('toggleWideView');
         const toggleAspectBtn = document.getElementById('toggleAspectRatio');
         const mainContent = document.querySelector('.main-content');
@@ -178,9 +176,15 @@ if (currentJudge) {
 
         if (!toggleWideBtn || !mainContent || !playerWrapper) return;
 
-        // 저장된 설정 로드
+        // 저장된 설정 로드 (기본값을 true/doc으로 설정하여 변화를 즉시 느끼게 함)
+        if (localStorage.getItem('LAYOUT_INIT') !== 'done') {
+            localStorage.setItem('WIDE_VIEW', 'true');
+            localStorage.setItem('ASPECT_MODE', 'doc');
+            localStorage.setItem('LAYOUT_INIT', 'done');
+        }
+
         const isWide = localStorage.getItem('WIDE_VIEW') === 'true';
-        const aspectMode = localStorage.getItem('ASPECT_MODE') || '16-9';
+        const aspectMode = localStorage.getItem('ASPECT_MODE') || 'doc';
 
         if (isWide) {
             mainContent.classList.add('wide-view');
@@ -190,6 +194,7 @@ if (currentJudge) {
         applyAspect(aspectMode);
 
         toggleWideBtn.addEventListener('click', () => {
+            console.log("Wide View Toggled");
             const newState = mainContent.classList.toggle('wide-view');
             toggleWideBtn.classList.toggle('active');
             localStorage.setItem('WIDE_VIEW', newState);
@@ -826,6 +831,7 @@ if (currentJudge) {
     }
 
     setTimeout(createWatermark, 500);
+    initLayoutSettings(); // 여기서 한 번만 호출
 
     document.getElementById('videoSelect').addEventListener('change', (e) => loadVideo(e.target.value));
     document.getElementById('mainCategorySelect').addEventListener('change', (e) => updateSubOptions(e.target.value));
