@@ -49,8 +49,8 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 9998;
-    /* 모든 뷰어 요소보다 위 */
+    z-index: 9998 !important;
+    /* 모든 뷰어 요소보다 확실히 위 */
     overflow: hidden;
 }
 
@@ -679,10 +679,7 @@ input[type="password"]:focus {
     /* 클릭 이벤트를 비디오로 통과시킴 (재생 가능하게) */
 }
 
-.watermark-item {
-    transition: all 5s ease-in-out;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
-}
+/* .watermark-item redundant consolidated above */
 
 body.secure-blur>* {
     visibility: hidden !important;
@@ -719,22 +716,22 @@ body.secure-blur::before {
 @keyframes watermark-float {
     0% {
         transform: translate(0, 0) rotate(-25deg);
-        opacity: 0.05;
+        opacity: 0.4;
     }
 
     33% {
         transform: translate(50px, 80px) rotate(-20deg);
-        opacity: 0.1;
+        opacity: 0.6;
     }
 
     66% {
         transform: translate(-40px, 40px) rotate(-30deg);
-        opacity: 0.08;
+        opacity: 0.5;
     }
 
     100% {
         transform: translate(0, 0) rotate(-25deg);
-        opacity: 0.05;
+        opacity: 0.4;
     }
 }
 
