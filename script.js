@@ -882,18 +882,39 @@ if (currentJudge) {
 
         const count = 10;
 
+        // 균일한 배치를 위해 3x4 그리드 구조 사용
+        const cols = 4;
+        const rows = 3;
+        const cellWidth = 100 / cols;
+        const cellHeight = 100 / rows;
+
+        let positions = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                positions.push({ r, c });
+            }
+        }
+        // 위치를 무작위로 섞고 필요한 개수(count)만큼만 사용
+        positions.sort(() => Math.random() - 0.5);
+
         for (let i = 0; i < count; i++) {
             const item = document.createElement('div');
             item.className = 'watermark-item dynamic-float';
             item.innerText = `${judgeName} | 보안 심사 | ${dateStr}`;
             item.style.position = 'absolute';
 
-            // 랜덤 위치 계산 (0-100%)
-            const left = (Math.random() * 80) + 10;
-            const top = (Math.random() * 80) + 10;
+            const pos = positions[i];
 
-            item.style.left = left + '%';
-            item.style.top = top + '%';
+            // 각 셀(칸)의 시작 x, y 좌표
+            const baseLeft = pos.c * cellWidth;
+            const baseTop = pos.r * cellHeight;
+
+            // 셀 내부에서 여백을 두고 약간의 무작위성(Jitter) 부여
+            const jitterX = Math.random() * (cellWidth * 0.5);
+            const jitterY = Math.random() * (cellHeight * 0.5);
+
+            item.style.left = (baseLeft + jitterX) + '%';
+            item.style.top = (baseTop + jitterY) + '%';
 
             // 작품 위에서도 더 잘 보이도록 완전한 흰색(불투명도 1.0)으로 수정
             item.style.color = 'rgba(255, 255, 255, 1)';
