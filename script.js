@@ -2,6 +2,28 @@ console.log("KODAF script.js: Script evaluation start.");
 // 보안 설정 및 데이터 로드 영역
 const SECURE_STORAGE_KEY = 'secure_judge_data';
 
+// ===== 다이얼로그 보안 예외 처리 =====
+// alert/confirm/prompt 호출 시 보안 화면이 뜨지 않도록 플래그 관리
+window._isDialogOpen = false;
+(function () {
+    const _origAlert = window.alert.bind(window);
+    const _origConfirm = window.confirm.bind(window);
+    const _origPrompt = window.prompt.bind(window);
+    window.alert = function (msg) {
+        window._isDialogOpen = true;
+        try { return _origAlert(msg); } finally { window._isDialogOpen = false; }
+    };
+    window.confirm = function (msg) {
+        window._isDialogOpen = true;
+        try { return _origConfirm(msg); } finally { window._isDialogOpen = false; }
+    };
+    window.prompt = function (msg, def) {
+        window._isDialogOpen = true;
+        try { return _origPrompt(msg, def); } finally { window._isDialogOpen = false; }
+    };
+})();
+// ===== 다이얼로그 보안 예외 처리 끝 =====
+
 // 보안 및 세션 체크
 function checkSession() {
     const session = sessionStorage.getItem('JUDGE_SESSION');
@@ -1296,6 +1318,8 @@ function securityAction(msg) {
 }
 
 window.addEventListener('blur', () => {
+    // alert/confirm/prompt 등 브라우저 기본 다이얼로그로 인한 blur는 보안 화면 제외
+    if (window._isDialogOpen) return;
     const _openedPopups = window.openedPopups || [];
     const _isPopupFocused = window.isPopupFocused || false;
     if (document.activeElement && document.activeElement.id === 'documentViewer') return;
