@@ -128,16 +128,35 @@ function getAdminData() {
     }
 }
 
-// 초기화 즉시 실행
-getAdminData();
+// 초기화 (Firebase 로딩 완료 대기)
+function initFirebaseSync() {
+    if (!window.firebaseRef || !window.firebaseDB) {
+        console.warn("KODAF Admin: Firebase not ready. Retrying in 500ms...");
+        setTimeout(initFirebaseSync, 500);
+        return;
+    }
+    getAdminData();
+}
+
+initFirebaseSync();
 
 window.currentAdminData = currentAdminData;
 
 function saveAdminData() {
+    console.log("KODAF Admin: Saving to Firebase...", currentAdminData);
     window.currentAdminData = currentAdminData;
+
+    // Firebase 저장
     window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData'), currentAdminData)
-        .then(() => console.log("Firebase 저장 완료"))
-        .catch(err => console.error("Firebase 저장 실패:", err));
+        .then(() => {
+            console.log("KODAF Admin: Firebase Sync Success!");
+            // 로컬 스토리지에 백업 (브라우저 종료 대비)
+            localStorage.setItem(SECURE_STORAGE_KEY, JSON.stringify(currentAdminData));
+        })
+        .catch(err => {
+            console.error("KODAF Admin: Firebase Sync Failed!", err);
+            alert("서버 저장에 실패했습니다. (인터넷 연결 또는 권한 확인 필)");
+        });
 }
 window.saveAdminData = saveAdminData;
 
