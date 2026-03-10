@@ -894,7 +894,7 @@ if (currentJudge) {
             container.appendChild(item);
         }
     }
-    console.log(`KODAF Security: ${rows * cols} watermark items created.`);
+    console.log(`KODAF Security: ${count} watermark items created.`);
 
     if (window.watermarkInterval) clearInterval(window.watermarkInterval);
 }
@@ -1197,7 +1197,6 @@ if (myScoresBtn && myScoresModal) {
         link.click();
         document.body.removeChild(link);
     });
-}
 
 // === 보안 강화 로직 ===
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -1352,4 +1351,4 @@ function blackoutScreen() {
 }
 
 console.log("KODAF 2026 High-Security Engine Initialized.");
-} // <--- if (currentJudge) { 블록 닫기
+} // <--- End of if (currentJudge) block
