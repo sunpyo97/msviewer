@@ -42,6 +42,33 @@ if (currentJudge) {
         }
     }
 
+    // 팝업 창 추적을 위한 전역 변수
+    let openedPopups = [];
+
+    function popoutDocument(url, isLocal = false) {
+        const width = 1100;
+        const height = 900;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        // 구글 링크를 직접 여는 대신 보안 뷰어 페이지를 경유
+        const secureViewerUrl = `secure-viewer.html?id=${encodeURIComponent(url)}&local=${isLocal}&user=${encodeURIComponent(currentJudge.name)}`;
+
+        const popup = window.open(secureViewerUrl, '_blank', `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`);
+
+        if (popup) {
+            openedPopups.push(popup);
+            // 팝업이 닫힐 때 배열에서 제거
+            const timer = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(timer);
+                    openedPopups = openedPopups.filter(p => p !== popup);
+                }
+            }, 1000);
+        }
+        return popup;
+    }
+
     // 초기화 즉시 실행
     getStoredData();
     window.currentData = currentData;
@@ -694,14 +721,11 @@ if (currentJudge) {
                     e.stopPropagation();
                     let url = '';
                     if (video.appFormDriveId) {
-                        const match = video.appFormDriveId.match(/[-\w]{25,}/);
-                        const cleanId = match ? match[0] : video.appFormDriveId;
-                        url = `https://drive.google.com/file/d/${cleanId}/preview`;
+                        popoutDocument(video.appFormDriveId, false);
                     } else {
                         const fileObj = await getVideoFile(video.id + '_appForm');
-                        if (fileObj) url = URL.createObjectURL(fileObj);
+                        if (fileObj) popoutDocument(URL.createObjectURL(fileObj), true);
                     }
-                    if (url) window.open(url, '_blank', 'width=1000,height=800');
                 };
                 playlistContainer.appendChild(btnAppPop);
             }
@@ -733,14 +757,11 @@ if (currentJudge) {
                     e.stopPropagation();
                     let url = '';
                     if (video.addDescDriveId) {
-                        const match = video.addDescDriveId.match(/[-\w]{25,}/);
-                        const cleanId = match ? match[0] : video.addDescDriveId;
-                        url = `https://drive.google.com/file/d/${cleanId}/preview`;
+                        popoutDocument(video.addDescDriveId, false);
                     } else {
                         const fileObj = await getVideoFile(video.id + '_addDesc');
-                        if (fileObj) url = URL.createObjectURL(fileObj);
+                        if (fileObj) popoutDocument(URL.createObjectURL(fileObj), true);
                     }
-                    if (url) window.open(url, '_blank', 'width=1000,height=800');
                 };
                 playlistContainer.appendChild(btnDescPop);
             }
@@ -1172,6 +1193,14 @@ function securityAction(msg) {
 
 window.addEventListener('blur', () => {
     if (document.activeElement && document.activeElement.id === 'documentViewer') return;
+
+    // 보안 팝업창이 열려 있고, 해당 창들이 아직 유효하다면 블러 처리 유예
+    const isAnyPopupOpen = openedPopups.some(p => !p.closed);
+    if (isAnyPopupOpen) {
+        console.log("Popup is focused, skipping main window blur.");
+        return;
+    }
+
     document.body.classList.add('secure-blur');
     const videoTag = document.getElementById('mainVideo');
     if (videoTag) videoTag.pause();
