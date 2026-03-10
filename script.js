@@ -835,24 +835,38 @@ if (currentJudge) {
         document.getElementById('totalValue').innerText = total;
     }
 
-    // 워터마크 생성
+    // 워터마크 생성 (격자 배치를 통해 겹침 방지)
     function createWatermark() {
         if (!currentJudge) return;
         const container = document.getElementById('watermark');
         if (!container) return;
         container.innerHTML = '';
-        for (let i = 0; i < 30; i++) {
-            const item = document.createElement('div');
-            item.className = 'watermark-item dynamic-float';
-            item.innerText = `${currentJudge.name} | ${currentJudge.id} | ${new Date().toLocaleDateString()}`;
-            item.style.position = 'absolute';
-            item.style.left = Math.random() * 90 + '%';
-            item.style.top = Math.random() * 95 + '%';
-            item.style.color = 'rgba(255, 255, 255, 0.9)';
-            item.style.fontSize = '12px'; item.style.fontWeight = 'bold';
-            item.style.pointerEvents = 'none'; item.style.whiteSpace = 'nowrap';
-            item.style.transform = `rotate(-25deg)`;
-            container.appendChild(item);
+
+        const rows = 5;
+        const cols = 4;
+        const dateStr = new Date().toLocaleDateString();
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const item = document.createElement('div');
+                item.className = 'watermark-item dynamic-float';
+                item.innerText = `${currentJudge.name} | ${currentJudge.id} | ${dateStr}`;
+                item.style.position = 'absolute';
+
+                // 격자 위치 계산
+                const left = (c * (100 / cols)) + (Math.random() * 8) + 5;
+                const top = (r * (100 / rows)) + (Math.random() * 8) + 5;
+
+                item.style.left = left + '%';
+                item.style.top = top + '%';
+                item.style.color = 'rgba(255, 255, 255, 0.1)';
+                item.style.fontSize = '13px';
+                item.style.fontWeight = 'bold';
+                item.style.pointerEvents = 'none';
+                item.style.whiteSpace = 'nowrap';
+                item.style.transform = `rotate(-25deg)`;
+                container.appendChild(item);
+            }
         }
         setInterval(animateWatermarks, 2000);
     }
