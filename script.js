@@ -63,8 +63,10 @@ if (currentJudge) {
     }
 
     // 팝업 창 추적을 위한 전역 변수
-    let openedPopups = [];
-    let isPopupFocused = false;
+    window.openedPopups = [];
+    window.isPopupFocused = false;
+    let openedPopups = window.openedPopups;
+    let isPopupFocused = window.isPopupFocused;
 
     window.addEventListener('message', (e) => {
         if (e.data === 'trusted-popup-focus') {
@@ -1294,9 +1296,11 @@ function securityAction(msg) {
 }
 
 window.addEventListener('blur', () => {
+    const _openedPopups = window.openedPopups || [];
+    const _isPopupFocused = window.isPopupFocused || false;
     if (document.activeElement && document.activeElement.id === 'documentViewer') return;
-    if (isPopupFocused) return;
-    const isFocusOnPopupByDoc = openedPopups.some(p => {
+    if (_isPopupFocused) return;
+    const isFocusOnPopupByDoc = _openedPopups.some(p => {
         try { return p && !p.closed && p.document.hasFocus(); } catch (e) { return false; }
     });
     if (isFocusOnPopupByDoc) return;
@@ -1306,7 +1310,8 @@ window.addEventListener('blur', () => {
 // 마우스가 브라우저 창 밖으로 나가면 화면 둥북 (blur버튼 누르기 전 선제 방어)
 document.addEventListener('mouseleave', () => {
     if (isSecurityLocked) return;
-    if (openedPopups.some(p => p && !p.closed)) return;
+    const _openedPopups = window.openedPopups || [];
+    if (_openedPopups.some(p => p && !p.closed)) return;
     document.body.classList.add('secure-blur');
 });
 
