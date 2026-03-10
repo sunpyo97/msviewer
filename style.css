@@ -139,6 +139,63 @@ body {
     aspect-ratio: 16 / 9;
     position: relative;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+.player-wrapper.aspect-doc {
+    aspect-ratio: 3 / 4;
+    /* 세로로 더 긴 문서 비율 */
+}
+
+.player-wrapper.aspect-auto {
+    aspect-ratio: auto;
+    height: 80vh;
+    /* 자동 비율일 때 고정 높이 확보 */
+}
+
+.main-content.wide-view {
+    gap: 1rem;
+}
+
+.main-content.wide-view .viewer-section {
+    flex: 4;
+    /* 뷰어 영역 대폭 확장 */
+}
+
+.main-content.wide-view .scoring-section {
+    flex: 1;
+    /* 심사 영역 축소 */
+}
+
+.layout-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.toggle-btn {
+    padding: 6px 12px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #444;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.toggle-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.toggle-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 .video-placeholder {

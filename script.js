@@ -164,6 +164,61 @@ if (currentJudge) {
                 mainSelect.innerHTML = '<option>데이터 로딩 중...</option>';
             }
         }
+
+        // 레이아웃 토글 설정 초기화
+        initLayoutSettings();
+    }
+
+    // 레이아웃 토글 로직
+    function initLayoutSettings() {
+        const toggleWideBtn = document.getElementById('toggleWideView');
+        const toggleAspectBtn = document.getElementById('toggleAspectRatio');
+        const mainContent = document.querySelector('.main-content');
+        const playerWrapper = document.querySelector('.player-wrapper');
+
+        if (!toggleWideBtn || !mainContent || !playerWrapper) return;
+
+        // 저장된 설정 로드
+        const isWide = localStorage.getItem('WIDE_VIEW') === 'true';
+        const aspectMode = localStorage.getItem('ASPECT_MODE') || '16-9';
+
+        if (isWide) {
+            mainContent.classList.add('wide-view');
+            toggleWideBtn.classList.add('active');
+        }
+
+        applyAspect(aspectMode);
+
+        toggleWideBtn.addEventListener('click', () => {
+            const newState = mainContent.classList.toggle('wide-view');
+            toggleWideBtn.classList.toggle('active');
+            localStorage.setItem('WIDE_VIEW', newState);
+        });
+
+        toggleAspectBtn.addEventListener('click', () => {
+            let nextMode = '16-9';
+            if (playerWrapper.classList.contains('aspect-doc')) {
+                nextMode = 'auto';
+            } else if (!playerWrapper.classList.contains('aspect-doc') && !playerWrapper.classList.contains('aspect-auto')) {
+                nextMode = 'doc';
+            }
+
+            applyAspect(nextMode);
+            localStorage.setItem('ASPECT_MODE', nextMode);
+        });
+
+        function applyAspect(mode) {
+            playerWrapper.classList.remove('aspect-doc', 'aspect-auto');
+            toggleAspectBtn.classList.remove('active');
+
+            if (mode === 'doc') {
+                playerWrapper.classList.add('aspect-doc');
+                toggleAspectBtn.classList.add('active');
+            } else if (mode === 'auto') {
+                playerWrapper.classList.add('aspect-auto');
+                toggleAspectBtn.classList.add('active');
+            }
+        }
     }
 
     // 영상 목록 필터링 및 업데이트 함수

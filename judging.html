@@ -76,7 +76,17 @@
             </div>
             <div class="work-info">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h2 id="currentVideoTitle">디지털 광고 부문 - "The Future of AI"</h2>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 id="currentVideoTitle" style="margin: 0;">디지털 광고 부문 - "The Future of AI"</h2>
+                        <div class="layout-controls">
+                            <button id="toggleWideView" class="toggle-btn" title="크게 보기">
+                                <span>↔</span> 와이드 뷰
+                            </button>
+                            <button id="toggleAspectRatio" class="toggle-btn" title="비율 전환">
+                                <span>↕</span> 비율 전환
+                            </button>
+                        </div>
+                    </div>
                     <select id="videoSelect"
                         style="width: auto; margin-top: 0; background: #ffffff; color: #000000; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-weight: 600;">
                         <!-- JS dynamic -->
