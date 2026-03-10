@@ -866,277 +866,275 @@ if (currentJudge) {
         const judgeName = (currentJudge && currentJudge.name) ? currentJudge.name : '심사위원';
         const dateStr = new Date().toLocaleDateString();
 
-        const rows = 5;
-        const cols = 4;
+        const count = 10;
 
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                const item = document.createElement('div');
-                item.className = 'watermark-item dynamic-float';
-                item.innerText = `${judgeName} | 보안 심사 | ${dateStr}`;
-                item.style.position = 'absolute';
+        for (let i = 0; i < count; i++) {
+            const item = document.createElement('div');
+            item.className = 'watermark-item dynamic-float';
+            item.innerText = `${judgeName} | 보안 심사 | ${dateStr}`;
+            item.style.position = 'absolute';
 
-                // 격자 위치 계산
-                const left = (c * (100 / cols)) + (Math.random() * 8) + 5;
-                const top = (r * (100 / rows)) + (Math.random() * 8) + 5;
+            // 랜덤 위치 계산 (0-100%)
+            const left = (Math.random() * 80) + 10;
+            const top = (Math.random() * 80) + 10;
 
-                item.style.left = left + '%';
-                item.style.top = top + '%';
+            item.style.left = left + '%';
+            item.style.top = top + '%';
 
-                // 작품 위에서도 더 잘 보이도록 완전한 흰색(불투명도 1.0)으로 수정
-                item.style.color = 'rgba(255, 255, 255, 1)';
-                item.style.fontSize = '18px';
-                item.style.fontWeight = '700';
-                item.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.9)';
-                item.style.pointerEvents = 'none';
-                item.style.whiteSpace = 'nowrap';
-                item.style.transform = `rotate(-25deg)`;
-                item.style.zIndex = '9999'; // 개별 아이템도 최상단 보장
+            // 작품 위에서도 더 잘 보이도록 완전한 흰색(불투명도 1.0)으로 수정
+            item.style.color = 'rgba(255, 255, 255, 1)';
+            item.style.fontSize = '18px';
+            item.style.fontWeight = '700';
+            item.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.9)';
+            item.style.pointerEvents = 'none';
+            item.style.whiteSpace = 'nowrap';
+            item.style.transform = `rotate(-25deg)`;
+            item.style.zIndex = '9999'; // 개별 아이템도 최상단 보장
 
-                container.appendChild(item);
-            }
+            container.appendChild(item);
         }
-        console.log(`KODAF Security: ${rows * cols} watermark items created.`);
-
-        if (window.watermarkInterval) clearInterval(window.watermarkInterval);
     }
+    console.log(`KODAF Security: ${rows * cols} watermark items created.`);
 
-    function animateWatermarks() {
-        const items = document.querySelectorAll('.watermark-item');
-        items.forEach(item => {
-            const moveX = (Math.random() - 0.5) * 40;
-            const moveY = (Math.random() - 0.5) * 40;
-            const currentLeft = parseFloat(item.style.left);
-            const currentTop = parseFloat(item.style.top);
-            item.style.left = (currentLeft + moveX / 10) + '%';
-            item.style.top = (currentTop + moveY / 10) + '%';
-        });
-    }
+    if (window.watermarkInterval) clearInterval(window.watermarkInterval);
+}
 
-    // 플레이어 제어
-    const videoTag = document.getElementById('mainVideo');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const videoTime = document.getElementById('videoTime');
-    const progressBar = document.querySelector('.progress');
+function animateWatermarks() {
+    const items = document.querySelectorAll('.watermark-item');
+    items.forEach(item => {
+        const moveX = (Math.random() - 0.5) * 40;
+        const moveY = (Math.random() - 0.5) * 40;
+        const currentLeft = parseFloat(item.style.left);
+        const currentTop = parseFloat(item.style.top);
+        item.style.left = (currentLeft + moveX / 10) + '%';
+        item.style.top = (currentTop + moveY / 10) + '%';
+    });
+}
 
-    if (playPauseBtn) {
-        playPauseBtn.addEventListener('click', () => {
-            if (videoTag.paused) { videoTag.play(); playPauseBtn.innerText = 'PAUSE'; }
-            else { videoTag.pause(); playPauseBtn.innerText = 'PLAY'; }
-        });
-    }
+// 플레이어 제어
+const videoTag = document.getElementById('mainVideo');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const videoTime = document.getElementById('videoTime');
+const progressBar = document.querySelector('.progress');
 
-    if (videoTag) {
-        videoTag.addEventListener('timeupdate', () => {
-            const curr = videoTag.currentTime;
-            const dur = videoTag.duration || 0;
-            const progress = (curr / dur) * 100;
-            if (progressBar) progressBar.style.width = `${progress}%`;
-            if (videoTime) videoTime.innerText = `${formatTime(curr)} / ${formatTime(dur)}`;
-        });
-    }
+if (playPauseBtn) {
+    playPauseBtn.addEventListener('click', () => {
+        if (videoTag.paused) { videoTag.play(); playPauseBtn.innerText = 'PAUSE'; }
+        else { videoTag.pause(); playPauseBtn.innerText = 'PLAY'; }
+    });
+}
 
-    function formatTime(seconds) {
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    }
+if (videoTag) {
+    videoTag.addEventListener('timeupdate', () => {
+        const curr = videoTag.currentTime;
+        const dur = videoTag.duration || 0;
+        const progress = (curr / dur) * 100;
+        if (progressBar) progressBar.style.width = `${progress}%`;
+        if (videoTime) videoTime.innerText = `${formatTime(curr)} / ${formatTime(dur)}`;
+    });
+}
 
-    // 초기화 및 리스너 등록
+function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+// 초기화 및 리스너 등록
+initUI();
+
+const logoutBtn = document.querySelector('.logout-btn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('JUDGE_SESSION');
+        window.location.href = 'login.html';
+    });
+}
+
+setTimeout(createWatermark, 500);
+initLayoutSettings(); // 여기서 한 번만 호출
+
+document.getElementById('videoSelect').addEventListener('change', (e) => loadVideo(e.target.value));
+document.getElementById('mainCategorySelect').addEventListener('change', (e) => updateSubOptions(e.target.value));
+document.getElementById('subCategorySelect').addEventListener('change', (e) => {
+    const mainCat = document.getElementById('mainCategorySelect').value;
+    const subCat = e.target.value;
+    renderFields(mainCat, subCat);
+    updateVideoList(mainCat, subCat);
+});
+
+const onDataLoaded = () => {
+    console.log("Firebase Data Loaded. Initializing UI Components...");
     initUI();
-
-    const logoutBtn = document.querySelector('.logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            sessionStorage.removeItem('JUDGE_SESSION');
-            window.location.href = 'login.html';
-        });
-    }
-
-    setTimeout(createWatermark, 500);
-    initLayoutSettings(); // 여기서 한 번만 호출
-
-    document.getElementById('videoSelect').addEventListener('change', (e) => loadVideo(e.target.value));
-    document.getElementById('mainCategorySelect').addEventListener('change', (e) => updateSubOptions(e.target.value));
-    document.getElementById('subCategorySelect').addEventListener('change', (e) => {
-        const mainCat = document.getElementById('mainCategorySelect').value;
-        const subCat = e.target.value;
+    createWatermark(); // 데이터 로드 후 워터마크 생성
+    const mainCat = document.getElementById('mainCategorySelect').value;
+    const subCat = document.getElementById('subCategorySelect').value;
+    if (mainCat && subCat) {
         renderFields(mainCat, subCat);
         updateVideoList(mainCat, subCat);
+    }
+};
+
+window.addEventListener('judgeDataLoaded', onDataLoaded);
+if (window.currentData && window.currentData.videos && window.currentData.videos.length > 0) {
+    onDataLoaded();
+}
+
+const submitBtn = document.querySelector('.btn.primary');
+if (submitBtn) {
+    const newSubmitBtn = submitBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+
+    newSubmitBtn.addEventListener('click', () => {
+        const currentVideoIndex = document.getElementById('videoSelect').value;
+        const video = window.currentData.videos[currentVideoIndex];
+        if (!video) return;
+
+        const scores = {};
+        let missingScore = false;
+        document.querySelectorAll('.score-input').forEach(input => {
+            const key = input.id.replace('score_', '');
+            const val = parseInt(input.value) || 0;
+            scores[key] = val;
+            if (val <= 0) missingScore = true;
+        });
+
+        if (missingScore) {
+            alert('모든 심사 항목에 점수를 작성해 주세요. 0점인 항목이 있으면 제출할 수 없습니다.');
+            return;
+        }
+
+        const result = {
+            judgeId: currentJudge.id, judgeName: currentJudge.name,
+            videoId: video.id, videoTitle: video.title,
+            mainCat: document.getElementById('mainCategorySelect').value,
+            subCat: document.getElementById('subCategorySelect').value,
+            scores: scores, comment: document.getElementById('judgeComment').value,
+            total: document.getElementById('totalValue').innerText,
+            timestamp: new Date().toISOString()
+        };
+
+        if (!window.currentData.results) window.currentData.results = [];
+
+        // Check for existing score by the same judge for the same video and same category
+        const existingIndex = window.currentData.results.findIndex(r =>
+            r.judgeId === currentJudge.id &&
+            r.videoId === video.id &&
+            r.mainCat === result.mainCat &&
+            r.subCat === result.subCat
+        );
+        if (existingIndex !== -1) {
+            // Update existing record
+            window.currentData.results[existingIndex] = result;
+        } else {
+            // Add new record
+            window.currentData.results.push(result);
+        }
+
+        window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData/results'), window.currentData.results)
+            .then(() => { alert('심사 결과가 성공적으로 등록/수정되었습니다. 수고하셨습니다.'); })
+            .catch((error) => {
+                console.error('제출 저장 실패:', error);
+                alert('점수 저장에 실패했습니다. 관리자에게 문의하세요.');
+            });
+    });
+}
+
+// === 내 심사 결과 모달 로직 ===
+const myScoresBtn = document.getElementById('myScoresBtn');
+const myScoresModal = document.getElementById('myScoresModal');
+const closeMyScoresBtn = document.getElementById('closeMyScoresBtn');
+const exportMyScoresBtn = document.getElementById('exportMyScoresBtn');
+
+if (myScoresBtn && myScoresModal) {
+    myScoresBtn.addEventListener('click', () => {
+        renderMyScores();
+        myScoresModal.style.display = 'flex';
     });
 
-    const onDataLoaded = () => {
-        console.log("Firebase Data Loaded. Initializing UI Components...");
-        initUI();
-        createWatermark(); // 데이터 로드 후 워터마크 생성
-        const mainCat = document.getElementById('mainCategorySelect').value;
-        const subCat = document.getElementById('subCategorySelect').value;
-        if (mainCat && subCat) {
-            renderFields(mainCat, subCat);
-            updateVideoList(mainCat, subCat);
+    closeMyScoresBtn.addEventListener('click', () => {
+        myScoresModal.style.display = 'none';
+    });
+
+    // 외부 클리 시 닫기
+    window.addEventListener('click', (e) => {
+        if (e.target === myScoresModal) {
+            myScoresModal.style.display = 'none';
         }
-    };
+    });
 
-    window.addEventListener('judgeDataLoaded', onDataLoaded);
-    if (window.currentData && window.currentData.videos && window.currentData.videos.length > 0) {
-        onDataLoaded();
-    }
+    function renderMyScores() {
+        const tbody = document.getElementById('myScoresBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
 
-    const submitBtn = document.querySelector('.btn.primary');
-    if (submitBtn) {
-        const newSubmitBtn = submitBtn.cloneNode(true);
-        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+        const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
 
-        newSubmitBtn.addEventListener('click', () => {
-            const currentVideoIndex = document.getElementById('videoSelect').value;
-            const video = window.currentData.videos[currentVideoIndex];
-            if (!video) return;
+        if (results.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">제출한 심사 결과가 없습니다.</td></tr>`;
+            return;
+        }
 
-            const scores = {};
-            let missingScore = false;
-            document.querySelectorAll('.score-input').forEach(input => {
-                const key = input.id.replace('score_', '');
-                const val = parseInt(input.value) || 0;
-                scores[key] = val;
-                if (val <= 0) missingScore = true;
+        // 최신순 정렬
+        results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        results.forEach((res) => {
+            const tr = document.createElement('tr');
+            tr.style.cursor = 'pointer';
+            tr.addEventListener('mouseenter', () => tr.style.background = '#f1f5f9');
+            tr.addEventListener('mouseleave', () => tr.style.background = 'transparent');
+
+            tr.addEventListener('click', () => {
+                const mainSelect = document.getElementById('mainCategorySelect');
+                const subSelect = document.getElementById('subCategorySelect');
+                const videoSelect = document.getElementById('videoSelect');
+
+                if (mainSelect && subSelect && videoSelect) {
+                    // 해당 비디오의 카테고리 정보 찾기
+                    const video = window.currentData.videos.find(v => v.id === res.videoId);
+                    if (video) {
+                        // 현재 심사했던 카테고리(res.mainCat, res.subCat)로 먼저 전환
+                        mainSelect.value = res.mainCat;
+
+                        // 소분류 옵션 업데이트 (updateSubOptions은 내부적으로 updateVideoList를 호출함)
+                        // 하지만 우리는 동기적으로 값을 다 설정해야 하므로 직접 호출 순서를 제어
+
+                        // 1. 대분류에 따른 소분류 목록 갱신
+                        subSelect.innerHTML = '';
+                        if (JUDGING_SCHEMA[res.mainCat]?.sub) {
+                            Object.entries(JUDGING_SCHEMA[res.mainCat].sub).forEach(([key, data]) => {
+                                const option = document.createElement('option');
+                                option.value = key; option.innerText = data.name;
+                                subSelect.appendChild(option);
+                            });
+                        }
+                        subSelect.value = res.subCat || 'default';
+
+                        // 2. 해당 부문의 배점 필드 및 영상 목록 갱신
+                        renderFields(res.mainCat, subSelect.value);
+                        updateVideoList(res.mainCat, subSelect.value);
+
+                        // 3. 영상 선택 dropdown에서 해당 영상 선택
+                        const targetIndex = window.currentData.videos.findIndex(v => v.id === res.videoId);
+                        if (targetIndex !== -1) {
+                            videoSelect.value = targetIndex;
+                            loadVideo(targetIndex); // 즉시 로드
+                        }
+
+                        myScoresModal.style.display = 'none';
+                    }
+                }
             });
 
-            if (missingScore) {
-                alert('모든 심사 항목에 점수를 작성해 주세요. 0점인 항목이 있으면 제출할 수 없습니다.');
-                return;
-            }
+            const dateStr = new Date(res.timestamp).toLocaleString('ko-KR', {
+                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
 
-            const result = {
-                judgeId: currentJudge.id, judgeName: currentJudge.name,
-                videoId: video.id, videoTitle: video.title,
-                mainCat: document.getElementById('mainCategorySelect').value,
-                subCat: document.getElementById('subCategorySelect').value,
-                scores: scores, comment: document.getElementById('judgeComment').value,
-                total: document.getElementById('totalValue').innerText,
-                timestamp: new Date().toISOString()
-            };
+            const mainCatName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
+            const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
+            const scores = res.scores || {};
 
-            if (!window.currentData.results) window.currentData.results = [];
-
-            // Check for existing score by the same judge for the same video and same category
-            const existingIndex = window.currentData.results.findIndex(r =>
-                r.judgeId === currentJudge.id &&
-                r.videoId === video.id &&
-                r.mainCat === result.mainCat &&
-                r.subCat === result.subCat
-            );
-            if (existingIndex !== -1) {
-                // Update existing record
-                window.currentData.results[existingIndex] = result;
-            } else {
-                // Add new record
-                window.currentData.results.push(result);
-            }
-
-            window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData/results'), window.currentData.results)
-                .then(() => { alert('심사 결과가 성공적으로 등록/수정되었습니다. 수고하셨습니다.'); })
-                .catch((error) => {
-                    console.error('제출 저장 실패:', error);
-                    alert('점수 저장에 실패했습니다. 관리자에게 문의하세요.');
-                });
-        });
-    }
-
-    // === 내 심사 결과 모달 로직 ===
-    const myScoresBtn = document.getElementById('myScoresBtn');
-    const myScoresModal = document.getElementById('myScoresModal');
-    const closeMyScoresBtn = document.getElementById('closeMyScoresBtn');
-    const exportMyScoresBtn = document.getElementById('exportMyScoresBtn');
-
-    if (myScoresBtn && myScoresModal) {
-        myScoresBtn.addEventListener('click', () => {
-            renderMyScores();
-            myScoresModal.style.display = 'flex';
-        });
-
-        closeMyScoresBtn.addEventListener('click', () => {
-            myScoresModal.style.display = 'none';
-        });
-
-        // 외부 클리 시 닫기
-        window.addEventListener('click', (e) => {
-            if (e.target === myScoresModal) {
-                myScoresModal.style.display = 'none';
-            }
-        });
-
-        function renderMyScores() {
-            const tbody = document.getElementById('myScoresBody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-
-            const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
-
-            if (results.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">제출한 심사 결과가 없습니다.</td></tr>`;
-                return;
-            }
-
-            // 최신순 정렬
-            results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-            results.forEach((res) => {
-                const tr = document.createElement('tr');
-                tr.style.cursor = 'pointer';
-                tr.addEventListener('mouseenter', () => tr.style.background = '#f1f5f9');
-                tr.addEventListener('mouseleave', () => tr.style.background = 'transparent');
-
-                tr.addEventListener('click', () => {
-                    const mainSelect = document.getElementById('mainCategorySelect');
-                    const subSelect = document.getElementById('subCategorySelect');
-                    const videoSelect = document.getElementById('videoSelect');
-
-                    if (mainSelect && subSelect && videoSelect) {
-                        // 해당 비디오의 카테고리 정보 찾기
-                        const video = window.currentData.videos.find(v => v.id === res.videoId);
-                        if (video) {
-                            // 현재 심사했던 카테고리(res.mainCat, res.subCat)로 먼저 전환
-                            mainSelect.value = res.mainCat;
-
-                            // 소분류 옵션 업데이트 (updateSubOptions은 내부적으로 updateVideoList를 호출함)
-                            // 하지만 우리는 동기적으로 값을 다 설정해야 하므로 직접 호출 순서를 제어
-
-                            // 1. 대분류에 따른 소분류 목록 갱신
-                            subSelect.innerHTML = '';
-                            if (JUDGING_SCHEMA[res.mainCat]?.sub) {
-                                Object.entries(JUDGING_SCHEMA[res.mainCat].sub).forEach(([key, data]) => {
-                                    const option = document.createElement('option');
-                                    option.value = key; option.innerText = data.name;
-                                    subSelect.appendChild(option);
-                                });
-                            }
-                            subSelect.value = res.subCat || 'default';
-
-                            // 2. 해당 부문의 배점 필드 및 영상 목록 갱신
-                            renderFields(res.mainCat, subSelect.value);
-                            updateVideoList(res.mainCat, subSelect.value);
-
-                            // 3. 영상 선택 dropdown에서 해당 영상 선택
-                            const targetIndex = window.currentData.videos.findIndex(v => v.id === res.videoId);
-                            if (targetIndex !== -1) {
-                                videoSelect.value = targetIndex;
-                                loadVideo(targetIndex); // 즉시 로드
-                            }
-
-                            myScoresModal.style.display = 'none';
-                        }
-                    }
-                });
-
-                const dateStr = new Date(res.timestamp).toLocaleString('ko-KR', {
-                    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                });
-
-                const mainCatName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
-                const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
-                const scores = res.scores || {};
-
-                tr.innerHTML = `
+            tr.innerHTML = `
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${dateStr}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size:0.75rem;">${res.videoId}<br><span style="color:#64748b;">${mainCatName} > ${subCatName}</span></td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight:600; color:var(--primary-color);">${res.videoTitle}</td>
@@ -1147,59 +1145,59 @@ if (currentJudge) {
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${scores.performance || 0}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight:bold; color:var(--primary-color);">${res.total || 0}</td>
                 `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        exportMyScoresBtn.addEventListener('click', () => {
-            const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
-            if (results.length === 0) {
-                alert('다운로드할 데이터가 없습니다.');
-                return;
-            }
-
-            let csvContent = "\uFEFF"; // 한글 깨짐 방지 BOM
-            csvContent += "심사 일시,출품번호,대분류,소분류,작품명,전략성,기술성,예술성/심미성,메시지 전달력,성과대중성,총점,심사평\n";
-
-            results.forEach(res => {
-                const dateStr = new Date(res.timestamp).toLocaleString('ko-KR');
-                const mainCatName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
-                const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
-                const scores = res.scores || {};
-
-                // CSV 포맷 안전 처리 (따옴표 및 쉼표 치환)
-                const safeTitle = `"${(res.videoTitle || '').replace(/"/g, '""')}"`;
-                const safeComment = `"${(res.comment || '').replace(/"/g, '""')}"`;
-
-                const row = [
-                    `"${dateStr}"`,
-                    res.videoId,
-                    mainCatName,
-                    subCatName,
-                    safeTitle,
-                    scores.strategic || 0,
-                    scores.technical || 0,
-                    scores.artistic || 0,
-                    scores.delivery || 0,
-                    scores.performance || 0,
-                    res.total || 0,
-                    safeComment
-                ].join(',');
-
-                csvContent += row + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            const dateStr = new Date().toLocaleDateString('ko-KR').replace(/\. /g, '').replace('.', '');
-            link.setAttribute("download", `내_심사결과_${currentJudge.name}_${dateStr}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            tbody.appendChild(tr);
         });
     }
+
+    exportMyScoresBtn.addEventListener('click', () => {
+        const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
+        if (results.length === 0) {
+            alert('다운로드할 데이터가 없습니다.');
+            return;
+        }
+
+        let csvContent = "\uFEFF"; // 한글 깨짐 방지 BOM
+        csvContent += "심사 일시,출품번호,대분류,소분류,작품명,전략성,기술성,예술성/심미성,메시지 전달력,성과대중성,총점,심사평\n";
+
+        results.forEach(res => {
+            const dateStr = new Date(res.timestamp).toLocaleString('ko-KR');
+            const mainCatName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
+            const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
+            const scores = res.scores || {};
+
+            // CSV 포맷 안전 처리 (따옴표 및 쉼표 치환)
+            const safeTitle = `"${(res.videoTitle || '').replace(/"/g, '""')}"`;
+            const safeComment = `"${(res.comment || '').replace(/"/g, '""')}"`;
+
+            const row = [
+                `"${dateStr}"`,
+                res.videoId,
+                mainCatName,
+                subCatName,
+                safeTitle,
+                scores.strategic || 0,
+                scores.technical || 0,
+                scores.artistic || 0,
+                scores.delivery || 0,
+                scores.performance || 0,
+                res.total || 0,
+                safeComment
+            ].join(',');
+
+            csvContent += row + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        const dateStr = new Date().toLocaleDateString('ko-KR').replace(/\. /g, '').replace('.', '');
+        link.setAttribute("download", `내_심사결과_${currentJudge.name}_${dateStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}
 }
 
 // === 보안 강화 로직 ===
@@ -1318,16 +1316,32 @@ function blackoutScreen() {
     if (document.querySelector('.security-blocker')) return;
     const blocker = document.createElement('div');
     blocker.className = 'security-blocker';
-    blocker.style.zIndex = '100000';
-    blocker.style.position = 'fixed';
-    blocker.style.top = '0'; blocker.style.left = '0';
-    blocker.style.width = '100vw'; blocker.style.height = '100vh';
+    blocker.style.cssText = `
+        z-index: 2147483647 !important;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: #000000 !important;
+        pointer-events: auto !important; /* 클릭 가능하도록 강제 */
+        cursor: pointer;
+    `;
+
+    const closeSecurity = () => {
+        blocker.remove();
+        document.body.classList.remove('secure-blur');
+        document.body.style.pointerEvents = 'auto';
+        const toast = document.querySelector('.security-toast');
+        if (toast) toast.remove();
+    };
+
+    blocker.onclick = closeSecurity;
+
     blocker.innerHTML = `
         <div style="font-size: 5rem; margin-bottom: 2rem;">✋</div>
         <h2 style="color:white; font-size: 2.5rem; margin-bottom: 1rem;">보안 보호 모드 활성화</h2>
         <p style="color:#ff3b3b; font-size: 1.2rem; font-weight: 700;">비인가 동작 또는 포커스 이탈이 감지되어 화면이 보호되었습니다.</p>
-        <p style="color:#666; margin-top: 2rem;">심사 화면으로 돌아가려면 화면을 클릭하거나 아래 버튼을 누르세요.</p>
-        <button onclick="this.parentElement.remove(); document.body.classList.remove('secure-blur'); document.body.style.pointerEvents='auto';" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s;">심사 화면으로 복귀</button>
+        <p style="color:#ccc; margin-top: 2rem; font-size: 1.1rem;">심사 화면으로 돌아가려면 화면 아무 곳이나 클릭하거나 아래 버튼을 누르세요.</p>
+        <button onclick="event.stopPropagation();" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; pointer-events: auto;">심사 화면으로 복귀</button>
     `;
     document.body.appendChild(blocker);
 }
