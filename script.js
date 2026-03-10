@@ -1241,6 +1241,7 @@ window.addEventListener('blur', () => {
 });
 
 window.addEventListener('focus', () => {
+    isPopupFocused = false; // 메인 창으로 돌아오면 팝업 포커스 상태 초기화
     document.body.classList.remove('secure-blur');
 });
 
