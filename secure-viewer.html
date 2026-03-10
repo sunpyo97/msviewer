@@ -52,6 +52,44 @@
             z-index: 100;
             pointer-events: none;
         }
+
+        /* 워터마크 스타일 */
+        .watermark-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .watermark-item {
+            position: absolute;
+            white-space: nowrap;
+            opacity: 1;
+            transform: rotate(-25deg);
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        @keyframes dynamicFloat {
+            0% {
+                transform: rotate(-25deg) translate(0, 0);
+            }
+
+            50% {
+                transform: rotate(-25deg) translate(10px, 10px);
+            }
+
+            100% {
+                transform: rotate(-25deg) translate(0, 0);
+            }
+        }
+
+        .dynamic-float {
+            animation: dynamicFloat 8s infinite ease-in-out;
+        }
     </style>
 </head>
 
