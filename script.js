@@ -1309,21 +1309,27 @@ window.addEventListener('blur', () => {
 document.addEventListener('mouseleave', () => {
     // 팝업창이 떠 있는 상태라면 예외 처리 (오탐 방지)
     if (openedPopups.some(p => p && !p.closed)) return;
-
-    // 즉각적인 블러 및 경고 (블랙아웃까지는 아니더라도 콘텐츠 식별 불가하게 처리)
     document.body.classList.add('secure-blur');
+});
+
+// 마우스가 다시 창 안으로 들어오면 블러 해제
+document.addEventListener('mouseenter', () => {
+    // 블랙아웃 스크린이 없을 때만 블러 해제 (보안 위반 상태가 아닐 때만)
+    if (!document.querySelector('.security-blocker')) {
+        document.body.classList.remove('secure-blur');
+    }
 });
 
 window.addEventListener('focus', () => {
     isPopupFocused = false; // 메인 창으로 돌아오면 팝업 포커스 상태 초기화
-    document.body.classList.remove('secure-blur');
+
+    // 포커스가 돌아오면 포인터 이벤트는 복구하되, 
+    // 블랙아웃 화면(.security-blocker)은 사용자가 "직접 클릭해서" 해제하도록 유지합니다.
     document.body.style.pointerEvents = 'auto';
 
-    // 포커스가 돌아오면 블랙아웃 레이어 제거 (사용자 편의)
-    const blocker = document.querySelector('.security-blocker');
-    if (blocker) blocker.remove();
-    const toast = document.querySelector('.security-toast');
-    if (toast) toast.remove();
+    if (!document.querySelector('.security-blocker')) {
+        document.body.classList.remove('secure-blur');
+    }
 });
 
 document.addEventListener('touchstart', (e) => {
