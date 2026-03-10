@@ -883,11 +883,11 @@ if (currentJudge) {
                 item.style.left = left + '%';
                 item.style.top = top + '%';
 
-                // 심사에 방해되지 않도록 훨씬 투명하게 조정
-                item.style.color = 'rgba(255, 255, 255, 0.3)';
+                // 작품 위에서도 더 잘 보이도록 완전한 흰색(불투명도 1.0)으로 수정
+                item.style.color = 'rgba(255, 255, 255, 1)';
                 item.style.fontSize = '18px';
                 item.style.fontWeight = '700';
-                item.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.8)';
+                item.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.9)';
                 item.style.pointerEvents = 'none';
                 item.style.whiteSpace = 'nowrap';
                 item.style.transform = `rotate(-25deg)`;
