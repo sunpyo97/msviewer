@@ -1212,24 +1212,28 @@ document.addEventListener('keydown', e => {
 });
 
 window.addEventListener('keydown', (e) => {
-    const isCapture = e.key === 'PrintScreen' || e.keyCode === 44 ||
-        ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'S' || e.key === 's'));
+    // 윈도우+Shift+S (Snipping Tool), PrintScreen, Alt+PrintScreen 등 감지
+    const isCaptureKey = e.key === 'PrintScreen' || e.keyCode === 44;
+    const isWinShiftS = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'S' || e.key === 's');
+    const isAltPrintScreen = e.altKey && (e.key === 'PrintScreen' || e.keyCode === 44);
 
-    if (isCapture) {
-        document.body.classList.add('secure-blur');
-        securityAction("캡처 도구 사용이 감지되어 즉각 차단되었습니다.");
+    if (isCaptureKey || isWinShiftS || isAltPrintScreen) {
+        securityAction("보안 위반: 화면 캡처 시도가 감지되었습니다.");
         e.preventDefault();
+        e.stopPropagation();
         return;
     }
+
+    // 인쇄 시도 차단
     if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
-        document.body.classList.add('secure-blur');
-        securityAction("문서 인쇄가 제한됩니다.");
+        securityAction("보안 위반: 문서 인쇄가 금지되어 있습니다.");
         e.preventDefault();
         return;
     }
+
+    // 개발자 도구 차단
     if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I'))) {
-        document.body.classList.add('secure-blur');
-        securityAction("개발자 도구 사용은 보안 위반 사항입니다.");
+        securityAction("보안 위반: 개발자 도구 접근이 금지되어 있습니다.");
         e.preventDefault();
         return;
     }
@@ -1243,46 +1247,35 @@ window.addEventListener('keyup', (e) => {
 }, true);
 
 function securityAction(msg) {
+    // 1. 즉각적인 시각적 차단 (포인터 이벤트도 즉시 차단)
     document.body.classList.add('secure-blur');
+    document.body.style.pointerEvents = 'none';
+
     const videoTag = document.getElementById('mainVideo');
     if (videoTag) videoTag.pause();
-    setTimeout(() => {
-        blackoutScreen();
-        showSecurityAlert(msg);
-    }, 0);
+
+    // 2. 동기적으로 블랙아웃 레이어 생성 (setTimeout 제거)
+    blackoutScreen();
+    showSecurityAlert(msg);
 }
 
 window.addEventListener('blur', () => {
     if (document.activeElement && document.activeElement.id === 'documentViewer') return;
 
-    // 사용자가 실제로 어디로 이동했는지 확인하기 위해 지연시간(250ms) 부여
-    setTimeout(() => {
-        // 1. 메시지 통신을 통해 팝업창이 포커스를 가졌다고 판단된 경우
-        if (isPopupFocused) {
-            console.log("Focus is on a trusted popup (via message). Skipping blur.");
-            return;
-        }
+    // 0ms 즉시 실행: 지연 시간을 완전히 제거하여 Snipping Tool이 동작하기 전에 차단
+    // 팝업창 포커스 여부를 동기적으로 확인 가능한 방법 동원
 
-        // 2. DOM 접근이 가능한 경우 직접 확인 (동일 도메인인 경우 더 확실함)
-        const isFocusOnPopupByDoc = openedPopups.some(p => {
-            try {
-                return p && !p.closed && p.document.hasFocus();
-            } catch (e) {
-                return false;
-            }
-        });
+    // 1. 팝업창 포커스 여부 (동기적 체크)
+    if (isPopupFocused) return;
 
-        if (isFocusOnPopupByDoc) {
-            console.log("Focus is on a trusted popup (via DOM). Skipping blur.");
-            return;
-        }
+    const isFocusOnPopupByDoc = openedPopups.some(p => {
+        try { return p && !p.closed && p.document.hasFocus(); } catch (e) { return false; }
+    });
+    if (isFocusOnPopupByDoc) return;
 
-        // 3. 둘 다 아니라면 외부 프로그램(엑셀 등)으로 나간 것이므로 차단
-        console.log("Security: Focus lost to unapproved application. Blurring screen.");
-        document.body.classList.add('secure-blur');
-        const videoTag = document.getElementById('mainVideo');
-        if (videoTag) videoTag.pause();
-    }, 250);
+    // 2. 즉시 블랙아웃 실행
+    console.log("Security: Focus lost. Extreme instant blackout activated.");
+    securityAction("보안 위반: 외부 프로그램 감지 또는 포커스 이탈로 화면이 차단되었습니다.");
 });
 
 window.addEventListener('focus', () => {
