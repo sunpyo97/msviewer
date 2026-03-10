@@ -1,3 +1,4 @@
+console.log("KODAF script.js: Script evaluation start.");
 // 보안 설정 및 데이터 로드 영역
 const SECURE_STORAGE_KEY = 'secure_judge_data';
 
@@ -13,9 +14,11 @@ function checkSession() {
 }
 
 const currentJudge = checkSession();
+console.log("KODAF script.js: Session check result:", currentJudge);
 
 // 만약 세션이 없다면 (alert 후 redirect 중), 하위 스크립트 실행을 방지하여 에러 페이지가 남는 것을 막음.
 if (currentJudge) {
+    console.log("KODAF script.js: Starting main logic for judge:", currentJudge.name);
     let currentData = { judges: [], videos: [], results: [] };
 
     function getStoredData() {
@@ -96,7 +99,7 @@ if (currentJudge) {
     }
 
     // 초기화 즉시 실행
-    getStoredData();
+    // getStoredData() call removed from here to prevent race condition
     window.currentData = currentData;
 
     // 이미지 기반 상세 배점표 데이터
@@ -183,7 +186,7 @@ if (currentJudge) {
         }
 
         // 카테고리 구성 (데이터 로드 완료 여부 체크)
-        if (window.currentData && window.currentData.videos && window.currentData.videos.length > 0) {
+        if (window.currentData) {
             const mainSelect = document.getElementById('mainCategorySelect');
 
             // allowedMainCategories가 객체로 올 경우 대비하여 배열로 변환
@@ -951,8 +954,7 @@ function formatTime(seconds) {
 }
 
 // 초기화 및 리스너 등록
-initUI();
-
+// initUI 호출 제거 (타이밍 이슈 해결)
 const logoutBtn = document.querySelector('.logout-btn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
@@ -1366,4 +1368,7 @@ if (myScoresBtn && myScoresModal) {
     }
 
     console.log("KODAF 2026 High-Security Engine Initialized.");
+
+    // Kick off data loading last to avoid race conditions
+    getStoredData();
 } // <--- End of if (currentJudge) block

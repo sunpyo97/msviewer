@@ -1,6 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update, child } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
-
 // Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyB23yFfUVEoN-2O94-aRielBxtM0XA_ryc",
@@ -13,15 +10,24 @@ const firebaseConfig = {
     measurementId: "G-PKL0DC31D5"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+// Initialize Firebase using the global compat namespace
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.database();
 
-// Export for other scripts to use
+// Setup global helpers for other scripts (maintaining the interface they expect)
 window.firebaseDB = db;
-window.firebaseRef = ref;
-window.firebaseSet = set;
-window.firebaseGet = get;
-window.firebaseOnValue = onValue;
-window.firebaseUpdate = update;
-window.firebaseChild = child;
+window.firebaseRef = function (dbRef, path) { return path ? db.ref(path) : dbRef; };
+window.firebaseSet = function (dbRef, val) { return dbRef.set(val); };
+window.firebaseGet = function (dbRef) { return dbRef.get(); };
+window.firebaseOnValue = function (dbRef, cb) { return dbRef.on('value', cb); };
+window.firebaseUpdate = function (dbRef, updates) { return dbRef.update(updates); };
+window.firebaseChild = function (dbRef, path) {
+    // If the first argument is already a reference, just use .child()
+    if (dbRef && typeof dbRef.child === 'function') {
+        return dbRef.child(path);
+    }
+    // If getting child from root
+    return db.ref(path);
+};

@@ -211,9 +211,14 @@
         </div>
     </div>
 
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="admin_common.js"></script>
-    <script type="module">
+    <!-- Firebase JS (Compat version for local file:// execution) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="admin_common.js"></script>
+    <script src="admin-script.js"></script>
+    <script>
         // Firebase objects are on window
         window.initAdminSidebar();
 

@@ -98,9 +98,13 @@
         </div>
     </main>
 
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="admin_common.js"></script>
-    <script type="module">
+    <!-- Firebase JS (Compat version for local file:// execution) -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="admin_common.js"></script>
+    <script>
         // 사이드바 및 데이터 로드
         window.initAdminSidebar();
 
