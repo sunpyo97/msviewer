@@ -50,16 +50,32 @@ body {
     height: 100%;
     pointer-events: none;
     z-index: 9998;
-    /* 모든 뷰어 요소보다 위, 드라이브 블로커 바로 아래 */
+    /* 모든 뷰어 요소보다 위 */
     overflow: hidden;
 }
 
 .watermark-item {
-    transform: rotate(-30deg);
+    position: absolute;
+    transform: rotate(-25deg);
     font-size: 14px;
     white-space: nowrap;
     user-select: none;
-    animation: moveWatermark 20s infinite alternate linear;
+    pointer-events: none;
+    animation: dynamicFloat 8s infinite ease-in-out;
+}
+
+@keyframes dynamicFloat {
+    0% {
+        transform: rotate(-25deg) translate(0, 0);
+    }
+
+    50% {
+        transform: rotate(-25deg) translate(5px, 5px);
+    }
+
+    100% {
+        transform: rotate(-25deg) translate(0, 0);
+    }
 }
 
 @keyframes moveWatermark {

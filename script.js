@@ -835,22 +835,24 @@ if (currentJudge) {
         document.getElementById('totalValue').innerText = total;
     }
 
-    // 워터마크 생성 (격자 배치를 통해 겹침 방지)
+    // 워터마크 생성 (팝업과 동일한 로직 및 스타일로 동기화)
     function createWatermark() {
-        if (!currentJudge) return;
         const container = document.getElementById('watermark');
         if (!container) return;
         container.innerHTML = '';
 
+        // currentJudge가 없을 경우를 대비한 기본 이름
+        const judgeName = (currentJudge && currentJudge.name) ? currentJudge.name : '심사위원';
+        const dateStr = new Date().toLocaleDateString();
+
         const rows = 5;
         const cols = 4;
-        const dateStr = new Date().toLocaleDateString();
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 const item = document.createElement('div');
                 item.className = 'watermark-item dynamic-float';
-                item.innerText = `${currentJudge.name} | ${currentJudge.id} | ${dateStr}`;
+                item.innerText = `${judgeName} | 보안 심사 | ${dateStr}`;
                 item.style.position = 'absolute';
 
                 // 격자 위치 계산
@@ -859,20 +861,22 @@ if (currentJudge) {
 
                 item.style.left = left + '%';
                 item.style.top = top + '%';
-                // 흰색을 극대화하고 그림자를 강하게 주어 모든 배경에서 확실히 보이게 함
-                item.style.color = 'rgba(255, 255, 255, 0.9)';
-                item.style.fontSize = '24px';
-                item.style.fontWeight = '900';
-                item.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 1.0)';
+
+                // 팝업과 유사하게 투명도와 크기 조정 (시인성 확보)
+                item.style.color = 'rgba(255, 255, 255, 0.4)';
+                item.style.fontSize = '18px';
+                item.style.fontWeight = '700';
+                item.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
                 item.style.pointerEvents = 'none';
                 item.style.whiteSpace = 'nowrap';
                 item.style.transform = `rotate(-25deg)`;
+                item.style.zIndex = '9999'; // 개별 아이템도 최상단 보장
+
                 container.appendChild(item);
             }
         }
-        // 기존에 있던 타이머가 중복되지 않게 예외처리 (필요시)
+
         if (window.watermarkInterval) clearInterval(window.watermarkInterval);
-        window.watermarkInterval = setInterval(animateWatermarks, 2000);
     }
 
     function animateWatermarks() {
