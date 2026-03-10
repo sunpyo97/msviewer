@@ -866,8 +866,8 @@ if (currentJudge) {
         const judgeName = (currentJudge && currentJudge.name) ? currentJudge.name : '심사위원';
         const dateStr = new Date().toLocaleDateString();
 
-        const rows = 5;
-        const cols = 4;
+        const rows = 3;
+        const cols = 3;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
@@ -884,7 +884,7 @@ if (currentJudge) {
                 item.style.top = top + '%';
 
                 // 팝업보다 더 선명하게 (사용자 요청 반영: 더 흰색)
-                item.style.color = 'rgba(255, 255, 255, 0.7)';
+                item.style.color = 'rgba(255, 255, 255, 0.9)';
                 item.style.fontSize = '18px';
                 item.style.fontWeight = '700';
                 item.style.textShadow = '2px 2px 5px rgba(0, 0, 0, 0.8)';
