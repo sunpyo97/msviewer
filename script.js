@@ -44,6 +44,22 @@ if (currentJudge) {
 
     // 팝업 창 추적을 위한 전역 변수
     let openedPopups = [];
+    let isPopupFocused = false;
+
+    window.addEventListener('message', (e) => {
+        if (e.data === 'trusted-popup-focus') {
+            isPopupFocused = true;
+            document.body.classList.remove('secure-blur');
+        } else if (e.data === 'trusted-popup-blur') {
+            isPopupFocused = false;
+            // 지연 후에 실제로 어떤 창도 포커스가 없다면 차단
+            setTimeout(() => {
+                if (!document.hasFocus() && !isPopupFocused) {
+                    document.body.classList.add('secure-blur');
+                }
+            }, 300);
+        }
+    });
 
     function popoutDocument(url, isLocal = false) {
         const width = 1100;

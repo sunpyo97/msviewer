@@ -84,15 +84,14 @@
         function createWatermark() {
             const container = document.getElementById('watermark');
             const dateStr = new Date().toLocaleDateString();
-            // 개수를 늘리고 색상을 조금 더 진하게 조정
-            for (let i = 0; i < 40; i++) {
+            for (let i = 0; i < 45; i++) {
                 const item = document.createElement('div');
                 item.className = 'watermark-item dynamic-float';
                 item.innerText = `${judgeName} | 보안 문서 | ${dateStr}`;
                 item.style.position = 'absolute';
                 item.style.left = (Math.random() * 90) + '%';
                 item.style.top = (Math.random() * 95) + '%';
-                item.style.color = 'rgba(200, 200, 200, 0.25)'; // 색상 가독성 향상
+                item.style.color = 'rgba(220, 220, 220, 0.35)'; // 가독성 있게 더 진하게 조정
                 item.style.fontSize = '16px';
                 item.style.fontWeight = '700';
                 item.style.pointerEvents = 'none';
@@ -110,9 +109,17 @@
             if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'p' || e.key === 's')) e.preventDefault();
         });
 
-        // 팝업창은 포커스를 잃어도 항상 보여야 하므로 blur 이벤트에 블러 처리를 하지 않음
+        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용)
+        window.addEventListener('focus', () => {
+            if (window.opener) window.opener.postMessage('trusted-popup-focus', '*');
+        });
+        window.addEventListener('blur', () => {
+            if (window.opener) window.opener.postMessage('trusted-popup-blur', '*');
+        });
 
-        // 메인 창이 닫히면 함께 닫히도록 설정 (필요 시)
+        // 팝업창 자체는 블러(검정 화면) 처리를 하지 않음 (사용자 요청)
+
+        // 메인 창이 닫히면 함께 닫히도록 설정
         window.addEventListener('message', (e) => {
             if (e.data === 'close') window.close();
         });
