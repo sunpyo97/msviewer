@@ -232,36 +232,21 @@
             }
         });
 
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden) { 
-                isCaptureLocked = true; 
-                applyBlackout('(화면 변경 감지)'); 
-            } else { 
-                removeBlackout(); 
-            }
-        });
+        // 포커스/마우스 이탈 감지 시 블랙아웃 기능 제거 (사용자 요청: 캡처 시도에만 반응하도록)
+        // document.addEventListener("visibilitychange", ...
+        // document.addEventListener('mouseleave', ...
+        // document.addEventListener('mouseenter', ...
 
-        document.addEventListener('mouseleave', () => {
-             if (blackout && !isCaptureLocked) {
-               blackout.classList.add('active');
-            }
-        });
-        
-        document.addEventListener('mouseenter', () => {
-            if (!isCaptureLocked) {
-                removeBlackout();
-            }
-        });
-
-        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용) 및 자체 보안
+        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용)
         window.addEventListener('focus', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-focus', '*');
             removeBlackout();
         });
         window.addEventListener('blur', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-blur', '*');
-            isCaptureLocked = true;
-            applyBlackout('(포커스 이탈 감지)');
+            // 팝업 자체는 blur 시 블랙아웃되지 않도록 적용 해제
+            // isCaptureLocked = true;
+            // applyBlackout('(포커스 이탈 감지)');
         });
 
         // 팝업창 자체는 블러(검정 화면) 처리를 하지 않음 (사용자 요청)
