@@ -68,7 +68,7 @@ function proceedLogin(judge) {
         name: judge.name || judge.Name || "심사위원",
         allowedMainCategories: judge.allowedMainCategories || []
     }));
-    window.location.href = 'judging_ms.html';
+    window.location.href = 'judging.html';
 }
 
 // Enter 키 로그인 지원

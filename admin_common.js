@@ -172,7 +172,7 @@ function initAdminSidebar() {
         { name: '계정 관리', icon: '👤', url: 'admin_accounts.html' },
         { name: '영상 등록/목록', icon: '🎬', url: 'admin_videos.html' },
         { name: '결과 대시보드', icon: '📊', url: 'admin_results.html' },
-        { name: '심사화면 가기', icon: '🖥️', url: 'judging_ms.html' },
+        { name: '심사화면 가기', icon: '🖥️', url: 'judging.html' },
         { name: '홈으로', icon: '🏠', url: 'index.html' }
     ];
 
