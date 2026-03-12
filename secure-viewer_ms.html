@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>보안 문서 뷰어 - KODAF 2026</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .viewer-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 구글 드라이브 UI 차단 레이어 */
+        .ui-blocker {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: transparent;
+            z-index: 9999;
+            cursor: not-allowed;
+        }
+
+        /* 보안 오버레이 (드래그/우클릭 방지) */
+        .secure-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        /* 워터마크 스타일 */
+        .watermark-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            overflow: hidden;
+        }
+
+        .watermark-item {
+            position: absolute;
+            white-space: nowrap;
+            opacity: 1;
+            transform: rotate(-25deg);
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        @keyframes dynamicFloat {
+            0% {
+                transform: rotate(-25deg) translate(0, 0);
+            }
+
+            50% {
+                transform: rotate(-25deg) translate(10px, 10px);
+            }
+
+            100% {
+                transform: rotate(-25deg) translate(0, 0);
+            }
+        }
+
+        .dynamic-float {
+            animation: dynamicFloat 8s infinite ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="blackout-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #ef4444; display: flex; justify-content: center; align-items: center; z-index: 9999999; opacity: 0; pointer-events: none; transition: opacity 0.2s;">
+        <div style="text-align: center;">
+            <div style="margin-bottom: 24px; font-size: 1.5rem; font-weight: bold;">
+                보안 정책에 의해 팝업 화면이 차단되었습니다.<br>
+                <span class="reason-text" style="font-size: 1rem; color: #a1a1aa; font-weight: 400;">(포커스 이탈 감지)</span>
+            </div>
+            <button id="resume-btn" style="padding: 12px 24px; font-size: 1.1rem; font-weight: bold; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 6px; pointer-events: auto;">
+                문서 화면으로 복귀하기
+            </button>
+        </div>
+    </div>
+    <style>
+        #blackout-overlay.active { opacity: 1 !important; pointer-events: auto !important; }
+    </style>
+    <div class="viewer-container">
+        <!-- 워터마크 컨테이너를 뷰어 내부로 이동 -->
+        <div class="watermark-container" id="watermark"></div>
+        <iframe id="secureIframe"></iframe>
+        <div class="ui-blocker" title="보안을 위해 외부 링크 기능이 차단되었습니다."></div>
+        <div class="secure-overlay"></div>
+    </div>
+
+    <script>
+        // 1. URL 파라미터에서 파일 ID 또는 URL 추출
+        const params = new URLSearchParams(window.location.search);
+        const docId = params.get('docId');
+        const judgeName = params.get('user') || '심사위원';
+
+        if (docId) {
+            const iframe = document.getElementById('secureIframe');
+            // script_ms.js 에서 이미 MS 뷰어 URL 전체를 넘겨받음 (혹은 구글 ID만 올 경우)
+            let srcUrl = docId;
+            if(!docId.startsWith('http')) {
+               const downloadUrl = `https://drive.google.com/uc?export=download&id=${docId}`;
+               srcUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadUrl)}`;
+            }
+            iframe.src = srcUrl;
+        } else {
+            const iframe = document.getElementById('secureIframe');
+            iframe.src = "about:blank";
+            document.body.innerHTML += "<h2 style='color:white;text-align:center;'>문서 ID가 누락되었습니다.</h2>";
+        }
+
+        // 2. 워터마크 생성 (격자 배치를 통해 겹침 방지 및 가시성 개선)
+        function createWatermark() {
+            const container = document.getElementById('watermark');
+            const dateStr = new Date().toLocaleDateString();
+
+            const rows = 3;
+            const cols = 3;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const item = document.createElement('div');
+                    item.className = 'watermark-item dynamic-float';
+                    item.innerText = `${judgeName} | 보안 문서 | ${dateStr}`;
+                    item.style.position = 'absolute';
+
+                    // 격자 위치 계산
+                    const left = (c * (100 / cols)) + (Math.random() * 10) + 5;
+                    const top = (r * (100 / rows)) + (Math.random() * 10) + 5;
+
+                    item.style.left = left + '%';
+                    item.style.top = top + '%';
+                    item.style.color = 'rgba(128, 128, 128, 0.6)'; // 반투명 회색으로 수정 (흰 배경/검은 배경 모두 보이게)
+                    item.style.fontSize = '17px'; // 기존 16px에서 17px로 상향
+                    item.style.fontWeight = '700';
+                    item.style.pointerEvents = 'none';
+                    item.style.whiteSpace = 'nowrap';
+                    item.style.transform = `rotate(-25deg)`;
+                    item.style.zIndex = '1000';
+                    container.appendChild(item);
+                }
+            }
+        }
+        createWatermark();
+
+        // 3. 보안 설정 (Pre-emptive Blackout 적용)
+        const blackout = document.getElementById('blackout-overlay');
+        let isCaptureLocked = false;
+        
+        const applyBlackout = (reason = '(포커스 이탈 감지)') => {
+            if (!blackout) return;
+            const reasonEl = blackout.querySelector('.reason-text');
+            if (reasonEl) reasonEl.innerText = reason;
+            blackout.classList.add('active');
+        };
+        
+        const removeBlackout = () => {
+            if (isCaptureLocked) return;
+            if (blackout) blackout.classList.remove('active');
+        };
+
+        const resumeBtn = document.getElementById('resume-btn');
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => {
+                isCaptureLocked = false;
+                removeBlackout();
+                window.focus();
+            });
+        }
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('dragstart', e => e.preventDefault());
+
+        document.addEventListener('keydown', (e) => {
+            // 단일 Meta 키 차단 제거 (과잉 방어 방지)
+            if (e.key === 'PrintScreen' || e.keyCode === 44) { 
+                isCaptureLocked = true; 
+                applyBlackout('(화면 캡처 시도 감지)'); 
+            }
+            
+            const isF12 = e.key === 'F12';
+            const isDevTools = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'c');
+            const isPrint = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p';
+            const isSave = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's';
+            const isMacCapture = e.metaKey && e.shiftKey && (e.key === '4' || e.key === '3' || e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'r');
+            const isWinCapture = (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's';
+            
+            if (isF12 || isDevTools || isPrint || isSave || isMacCapture || isWinCapture) {
+                e.preventDefault(); 
+                isCaptureLocked = true; 
+                applyBlackout(isF12 || isDevTools ? '(개발자 도구 접근 차단)' : '(화면 캡처/저장 시도 감지)'); 
+                try { navigator.clipboard.writeText('보안 위반: 클립보드 오염 처리됨'); } catch(err) {}
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                isCaptureLocked = true;
+                applyBlackout('(복사 시도 차단)');
+                try { navigator.clipboard.writeText('보안 위반: 복사 차단'); } catch(err) {}
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'PrintScreen' || e.key === 'Meta' || e.keyCode === 44) { 
+                isCaptureLocked = true; 
+                applyBlackout('(화면 캡처 시도 감지)'); 
+                try { navigator.clipboard.writeText('보안 위반: 클립보드 오염 처리됨'); } catch(err) {}
+            }
+        });
+
+        // 포커스/마우스 이탈 감지 시 블랙아웃 기능 제거 (사용자 요청: 캡처 시도에만 반응하도록)
+        // document.addEventListener("visibilitychange", ...
+        // document.addEventListener('mouseleave', ...
+        // document.addEventListener('mouseenter', ...
+
+        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용)
+        window.addEventListener('focus', () => {
+            if (window.opener) window.opener.postMessage('trusted-popup-focus', '*');
+            removeBlackout();
+        });
+        window.addEventListener('blur', () => {
+            if (window.opener) window.opener.postMessage('trusted-popup-blur', '*');
+            // 팝업 자체는 blur 시 블랙아웃되지 않도록 적용 해제
+            // isCaptureLocked = true;
+            // applyBlackout('(포커스 이탈 감지)');
+        });
+
+        // 팝업창 자체는 블러(검정 화면) 처리를 하지 않음 (사용자 요청)
+
+        // 메인 창이 닫히면 함께 닫히도록 설정
+        window.addEventListener('message', (e) => {
+            if (e.data === 'close') window.close();
+        });
+    </script>
+</body>
+
+</html>
