@@ -94,6 +94,20 @@
 </head>
 
 <body>
+    <div id="blackout-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #ef4444; display: flex; justify-content: center; align-items: center; z-index: 9999999; opacity: 0; pointer-events: none; transition: opacity 0.2s;">
+        <div style="text-align: center;">
+            <div style="margin-bottom: 24px; font-size: 1.5rem; font-weight: bold;">
+                보안 정책에 의해 팝업 화면이 차단되었습니다.<br>
+                <span class="reason-text" style="font-size: 1rem; color: #a1a1aa; font-weight: 400;">(포커스 이탈 감지)</span>
+            </div>
+            <button id="resume-btn" style="padding: 12px 24px; font-size: 1.1rem; font-weight: bold; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 6px; pointer-events: auto;">
+                문서 화면으로 복귀하기
+            </button>
+        </div>
+    </div>
+    <style>
+        #blackout-overlay.active { opacity: 1 !important; pointer-events: auto !important; }
+    </style>
     <div class="viewer-container">
         <!-- 워터마크 컨테이너를 뷰어 내부로 이동 -->
         <div class="watermark-container" id="watermark"></div>
@@ -153,18 +167,101 @@
         }
         createWatermark();
 
-        // 3. 보안 설정 (우클릭 등 차단)
+        // 3. 보안 설정 (Pre-emptive Blackout 적용)
+        const blackout = document.getElementById('blackout-overlay');
+        let isCaptureLocked = false;
+        
+        const applyBlackout = (reason = '(포커스 이탈 감지)') => {
+            if (!blackout) return;
+            const reasonEl = blackout.querySelector('.reason-text');
+            if (reasonEl) reasonEl.innerText = reason;
+            blackout.classList.add('active');
+        };
+        
+        const removeBlackout = () => {
+            if (isCaptureLocked) return;
+            if (blackout) blackout.classList.remove('active');
+        };
+
+        const resumeBtn = document.getElementById('resume-btn');
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => {
+                isCaptureLocked = false;
+                removeBlackout();
+                window.focus();
+            });
+        }
+
         document.addEventListener('contextmenu', e => e.preventDefault());
-        document.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'p' || e.key === 's')) e.preventDefault();
+        document.addEventListener('dragstart', e => e.preventDefault());
+
+        document.addEventListener('keydown', (e) => {
+            // 단일 Meta 키 차단 제거 (과잉 방어 방지)
+            if (e.key === 'PrintScreen' || e.keyCode === 44) { 
+                isCaptureLocked = true; 
+                applyBlackout('(화면 캡처 시도 감지)'); 
+            }
+            
+            const isF12 = e.key === 'F12';
+            const isDevTools = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'c');
+            const isPrint = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p';
+            const isSave = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's';
+            const isMacCapture = e.metaKey && e.shiftKey && (e.key === '4' || e.key === '3' || e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'r');
+            const isWinCapture = (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's';
+            
+            if (isF12 || isDevTools || isPrint || isSave || isMacCapture || isWinCapture) {
+                e.preventDefault(); 
+                isCaptureLocked = true; 
+                applyBlackout(isF12 || isDevTools ? '(개발자 도구 접근 차단)' : '(화면 캡처/저장 시도 감지)'); 
+                try { navigator.clipboard.writeText('보안 위반: 클립보드 오염 처리됨'); } catch(err) {}
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+                e.preventDefault();
+                isCaptureLocked = true;
+                applyBlackout('(복사 시도 차단)');
+                try { navigator.clipboard.writeText('보안 위반: 복사 차단'); } catch(err) {}
+            }
         });
 
-        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용)
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'PrintScreen' || e.key === 'Meta' || e.keyCode === 44) { 
+                isCaptureLocked = true; 
+                applyBlackout('(화면 캡처 시도 감지)'); 
+                try { navigator.clipboard.writeText('보안 위반: 클립보드 오염 처리됨'); } catch(err) {}
+            }
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) { 
+                isCaptureLocked = true; 
+                applyBlackout('(화면 변경 감지)'); 
+            } else { 
+                removeBlackout(); 
+            }
+        });
+
+        document.addEventListener('mouseleave', () => {
+             if (blackout && !isCaptureLocked) {
+               blackout.classList.add('active');
+            }
+        });
+        
+        document.addEventListener('mouseenter', () => {
+            if (!isCaptureLocked) {
+                removeBlackout();
+            }
+        });
+
+        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용) 및 자체 보안
         window.addEventListener('focus', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-focus', '*');
+            removeBlackout();
         });
         window.addEventListener('blur', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-blur', '*');
+            isCaptureLocked = true;
+            applyBlackout('(포커스 이탈 감지)');
         });
 
         // 팝업창 자체는 블러(검정 화면) 처리를 하지 않음 (사용자 요청)

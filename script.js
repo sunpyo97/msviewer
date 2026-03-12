@@ -1268,168 +1268,130 @@ if (myScoresBtn && myScoresModal) {
     });
 } // <--- End of if (myScoresBtn && myScoresModal)
 
-// === 보안 강화 로직 ===
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
-        e.preventDefault();
-        securityAction("보안 정책상 복사가 금지되어 있습니다.");
-    }
-});
-
-window.addEventListener('keydown', (e) => {
-    // 윈도우+Shift+S (Snipping Tool), PrintScreen, Alt+PrintScreen 등 감지
-    const isCaptureKey = e.key === 'PrintScreen' || e.keyCode === 44;
-    const isWinShiftS = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'S' || e.key === 's');
-    const isAltPrintScreen = e.altKey && (e.key === 'PrintScreen' || e.keyCode === 44);
-
-    if (isCaptureKey || isWinShiftS || isAltPrintScreen) {
-        securityAction("보안 위반: 화면 캡처 시도가 감지되었습니다.");
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-    }
-
-    // 인쇄 시도 차단
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
-        securityAction("보안 위반: 문서 인쇄가 금지되어 있습니다.");
-        e.preventDefault();
-        return;
-    }
-
-    // 개발자 도구 차단
-    if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.key === 'I'))) {
-        securityAction("보안 위반: 개발자 도구 접근이 금지되어 있습니다.");
-        e.preventDefault();
-        return;
-    }
-}, true);
-
-window.addEventListener('keyup', (e) => {
-    if (e.key === 'PrintScreen' || e.keyCode === 44) {
-        document.body.classList.add('secure-blur');
-        securityAction("캡처 시도 감지: 즉각 폐쇄 조치.");
-    }
-}, true);
-
-// === 보안 잠금 코어 ===
-let isSecurityLocked = false;
-
-function securityAction(msg) {
-    if (isSecurityLocked) return; // 이미 잠금 중이면 중복 호출 무시
-    // alert/confirm/prompt 다이얼로그로 인한 보안 동작 제외
-    if (window._isDialogOpen) return;
-    isSecurityLocked = true;
-    document.body.classList.add('secure-blur');
-    const videoTag = document.getElementById('mainVideo');
-    if (videoTag) videoTag.pause();
-    blackoutScreen(msg);
-}
-
-window.addEventListener('blur', () => {
-    // alert/confirm/prompt 등 브라우저 기본 다이얼로그로 인한 blur는 보안 화면 제외
-    if (window._isDialogOpen) return;
-    const _openedPopups = window.openedPopups || [];
-    const _isPopupFocused = window.isPopupFocused || false;
-    if (document.activeElement && document.activeElement.id === 'documentViewer') return;
-    if (_isPopupFocused) return;
-    const isFocusOnPopupByDoc = _openedPopups.some(p => {
-        try { return p && !p.closed && p.document.hasFocus(); } catch (e) { return false; }
-    });
-    if (isFocusOnPopupByDoc) return;
-    securityAction("보안 위반: 외부 프로그램 감지 또는 포커스 이탈로 화면이 차단되었습니다.");
-});
-
-// 마우스가 브라우저 창 밖으로 나가면 화면 둥북 (blur버튼 누르기 전 선제 방어)
-document.addEventListener('mouseleave', () => {
-    if (isSecurityLocked) return;
-    // alert/confirm/prompt 다이얼로그로 인한 마우스 이탈 제외
-    if (window._isDialogOpen) return;
-    const _openedPopups = window.openedPopups || [];
-    if (_openedPopups.some(p => p && !p.closed)) return;
-    document.body.classList.add('secure-blur');
-});
-
-// 마우스가 다시 보안 수준 완화
-document.addEventListener('mouseenter', () => {
-    if (isSecurityLocked) return;
-    document.body.classList.remove('secure-blur');
-});
-
-window.addEventListener('focus', () => {
-    isPopupFocused = false;
-    // 보안 잠금 중에는 포커스가 돌아와도 화면을 풀지 않음
-    if (!isSecurityLocked) {
-        document.body.classList.remove('secure-blur');
-    }
-});
-
-document.addEventListener('touchstart', (e) => {
-    if (e.touches.length > 1) e.preventDefault();
-}, { passive: false });
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        document.body.classList.add('secure-blur');
-        const videoTag = document.getElementById('mainVideo');
-        if (videoTag) videoTag.pause();
-    } else {
-        document.body.classList.remove('secure-blur');
-    }
-});
-
-function showSecurityAlert(msg) {
-    const toast = document.createElement('div');
-    toast.className = 'security-toast';
-    toast.style.cssText = `
-        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-        background: #000; border: 2px solid #ff3b3b; color: white;
-        padding: 12px 24px; border-radius: 8px; z-index: 2147483647 !important;
-        font-weight: 700; text-align: center;
-    `;
-    toast.innerHTML = `<span style="color:#ff3b3b; font-weight:800;">[SECURITY ALERT]</span><br>${msg}`;
-    document.documentElement.appendChild(toast); // <--- Append to HTML, not BODY
-    setTimeout(() => toast.remove(), 4000);
-}
-
-function blackoutScreen(msg) {
-    if (document.querySelector('.security-blocker')) return;
-    const blocker = document.createElement('div');
-    blocker.className = 'security-blocker';
-    blocker.style.cssText = `
-        z-index: 2147483647 !important;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100vw; height: 100vh;
-        background: #000000 !important;
-        pointer-events: auto !important;
-        cursor: pointer;
-    `;
-
-    const closeSecurity = (e) => {
-        if (e) e.stopPropagation();
-        isSecurityLocked = false; // 잠금 해제
-        blocker.remove();
-        document.body.classList.remove('secure-blur');
-        if (msg) showSecurityAlert(msg);
-        console.log("Security: User returned to judging.");
+// === 보안 강화 로직 (Pre-emptive Blackout) ===
+document.addEventListener('DOMContentLoaded', () => {
+    const blackout = document.getElementById('blackout-overlay');
+    let isCaptureLocked = false;
+    
+    const applyBlackout = (reason = '(포커스 이탈 및 화면 캡처 시도 감지)') => {
+        if (!blackout) return;
+        const reasonEl = blackout.querySelector('.reason-text');
+        if (reasonEl) reasonEl.innerText = reason;
+        
+        blackout.classList.add('active');
+        const video = document.getElementById('mainVideo');
+        if (video) video.pause(); 
     };
+    
+    const removeBlackout = () => {
+        if (isCaptureLocked) return;
+        if (blackout) blackout.classList.remove('active');
+    };
+    
+    const resumeBtn = document.getElementById('resume-btn');
+    if (resumeBtn) {
+        resumeBtn.addEventListener('click', () => {
+            isCaptureLocked = false;
+            removeBlackout();
+            window.focus();
+        });
+    }
 
-    blocker.onclick = closeSecurity;
+    document.addEventListener('keydown', (e) => {
+        // 단일 Meta 키 차단 제거 (과잉 방어 방지)
+        if (e.key === 'PrintScreen' || e.keyCode === 44) { 
+            isCaptureLocked = true; 
+            applyBlackout('(화면 캡처 시도 감지)'); 
+        }
+        
+        const isF12 = e.key === 'F12';
+        const isDevTools = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'c');
+        const isPrint = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p';
+        const isSave = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's';
+        const isMacCapture = e.metaKey && e.shiftKey && (e.key === '4' || e.key === '3' || e.key.toLowerCase() === 's' || e.key.toLowerCase() === 'r');
+        const isWinCapture = (e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's';
+        
+        if (isF12 || isDevTools || isPrint || isSave || isMacCapture || isWinCapture) {
+            e.preventDefault(); 
+            isCaptureLocked = true; 
+            applyBlackout(isF12 || isDevTools ? '(개발자 도구 접근 차단)' : '(화면 캡처/저장 시도 감지)'); 
+            try { navigator.clipboard.writeText('보안 위반: 클립보드 오염 처리됨'); } catch(err) {}
+        }
+        
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+            e.preventDefault();
+            isCaptureLocked = true;
+            applyBlackout('(복사 시도 차단)');
+            try { navigator.clipboard.writeText('보안 위반: 복사 차단'); } catch(err) {}
+        }
+    });
 
-    blocker.innerHTML = `
-        <div style="font-size: 5rem; margin-bottom: 2rem; user-select: none;">✋</div>
-        <h2 style="color:white; font-size: 2.5rem; margin-bottom: 1rem; user-select: none;">보안 보호 모드 활성화</h2>
-        <p style="color:#ff3b3b; font-size: 1.2rem; font-weight: 700; user-select: none;">비인가 동작 또는 포커스 이탈이 감지되어 화면이 보호되었습니다.</p>
-        <p style="color:#ccc; margin-top: 2rem; font-size: 1.1rem; user-select: none;">심사 화면으로 돌아가려면 화면 아무 곳이나 클릭하세요.</p>
-        <button id="resumeBtn" style="margin-top: 30px; padding: 15px 40px; font-size: 1.1rem; font-weight: bold; background: #ff3b3b; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; pointer-events: auto;">심사 화면으로 복귀</button>
-    `;
-    document.documentElement.appendChild(blocker); // <--- Append to HTML, not BODY
-    const btn = blocker.querySelector('#resumeBtn');
-    if (btn) btn.onclick = closeSecurity;
-}
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'PrintScreen' || e.key === 'Meta' || e.keyCode === 44) { 
+            isCaptureLocked = true; 
+            applyBlackout('(화면 캡처 시도 감지)'); 
+            try { navigator.clipboard.writeText('보안 위반: 클립보드 오염 처리됨'); } catch(err) {}
+        }
+    });
 
-console.log("KODAF 2026 High-Security Engine Initialized.");
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) { 
+            isCaptureLocked = true; 
+            applyBlackout('(화면 숨김/전환 감지)'); 
+        } else { 
+            removeBlackout(); 
+        }
+    });
+
+    window.addEventListener('blur', () => { 
+        // 다이얼로그(alert/confirm 등) 예외 처리
+        if (window._isDialogOpen) return;
+        
+        // 클릭된 요소가 문서 뷰어(iframe)인 경우 예외 처리
+        if (document.activeElement && document.activeElement.id === 'documentViewer') return;
+        
+        // 팝업창(secure-viewer) 포커스 예외 처리
+        const _openedPopups = window.openedPopups || [];
+        const _isPopupFocused = window.isPopupFocused || false;
+        if (_isPopupFocused) return;
+        
+        const isFocusOnPopupByDoc = _openedPopups.some(p => {
+            try { return p && !p.closed && p.document.hasFocus(); } catch (e) { return false; }
+        });
+        if (isFocusOnPopupByDoc) return;
+
+        isCaptureLocked = true; 
+        applyBlackout('(포커스 이탈 감지)'); 
+    });
+
+    window.addEventListener('focus', () => {
+        window.isPopupFocused = false;
+        removeBlackout();
+    });
+
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('dragstart', e => e.preventDefault());
+    
+    // 마우스 이탈 선제 차단 (예외 처리 포함)
+    document.addEventListener('mouseleave', () => {
+        if (window._isDialogOpen) return;
+        const _openedPopups = window.openedPopups || [];
+        if (_openedPopups.some(p => p && !p.closed)) return;
+        
+        // mouseleave 시 즉시 블랙아웃 걸지 않고 화면만 가림. 클릭 방어 (복귀 버튼 없이)
+        if (blackout && !isCaptureLocked) {
+           blackout.classList.add('active');
+        }
+    });
+    
+    document.addEventListener('mouseenter', () => {
+        if (!isCaptureLocked) {
+            removeBlackout();
+        }
+    });
+});
+
+console.log("KODAF 2026 High-Security Engine (Pre-emptive) Initialized.");
 
 // Kick off data loading last to avoid race conditions
 getStoredData();
