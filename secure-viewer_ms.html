@@ -119,15 +119,15 @@
     <script>
         // 1. URL 파라미터에서 파일 ID 또는 URL 추출
         const params = new URLSearchParams(window.location.search);
-        const docId = params.get('docId');
+        const fileId = params.get('id');
         const judgeName = params.get('user') || '심사위원';
 
-        if (docId) {
+        if (fileId) {
             const iframe = document.getElementById('secureIframe');
-            // script_ms.js 에서 이미 MS 뷰어 URL 전체를 넘겨받음 (혹은 구글 ID만 올 경우)
-            let srcUrl = docId;
-            if(!docId.startsWith('http')) {
-               const downloadUrl = `https://drive.google.com/uc?export=download&id=${docId}`;
+            // script_ms.js 에서 ID만 올 경우 MS 뷰어로 변환
+            let srcUrl = fileId;
+            if(!fileId.startsWith('http')) {
+               const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
                srcUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadUrl)}`;
             }
             iframe.src = srcUrl;

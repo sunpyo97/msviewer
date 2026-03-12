@@ -457,8 +457,12 @@ if (currentJudge) {
                 if (type === 'folder') {
                     // 폴더는 preview가 아니라 embeddedfolderview를 사용해야 격자 형태로 내용이 보입니다.
                     iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
+                } else if (type === 'doc' || type === true) {
+                    // 문서(신청서 등)인 경우 MS 뷰어로 연결
+                    const downloadUrl = `https://drive.google.com/uc?export=download&id=${cleanId}`;
+                    iframeTag.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(downloadUrl)}`;
                 } else {
-                    // 이미지, PPT, 문서 등 모든 파일은 /preview 형식을 사용합니다.
+                    // 영상(비디오)은 기존 구글 뷰어 유지 (MS 뷰어는 영상 지원 안함)
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 }
                 iframeTag.onload = () => {
