@@ -129,7 +129,7 @@
                 iframe.src = fileId;
             } else {
                 const cleanId = fileId.match(/[-\w]{25,}/) ? fileId.match(/[-\w]{25,}/)[0] : fileId;
-                iframe.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+                iframe.src = `https://drive.google.com/file/d/${cleanId}/embed`;
             }
         }
 
