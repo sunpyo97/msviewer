@@ -458,8 +458,8 @@ if (currentJudge) {
                     // 폴더는 preview가 아니라 embeddedfolderview를 사용해야 격자 형태로 내용이 보입니다.
                     iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
                 } else {
-                    // 프레젠테이션 최적화를 위해 /embed 형식을 사용합니다.
-                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/embed`;
+                    // 이미지, PPT, 문서 등 모든 파일은 /preview 형식을 사용합니다.
+                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 }
                 iframeTag.onload = () => {
                     console.log("KODAF Security: Iframe loaded, refreshing watermark.");
