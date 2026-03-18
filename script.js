@@ -962,29 +962,26 @@ if (currentJudge) {
         document.getElementById('totalValue').innerText = total;
     }
 
-    // 워터마크 생성 (팝업과 동일한 로직 및 스타일로 동기화)
+    // 워터마크 생성 (Object Pooling 적용: DOM 파괴 방지)
     function createWatermark() {
-        console.log("KODAF Security: Creating Watermarks...");
+        console.log("KODAF Security: Updating Watermarks (Pooling)...");
         const container = document.getElementById('watermark');
-        if (!container) {
-            console.error("KODAF Security Error: Watermark container not found!");
-            return;
-        }
-        container.innerHTML = '';
+        if (!container) return;
 
-        // DOM 순서상 가장 뒤로 이동하여 가장 위에 그려지도록 함
+        // DOM 순서 보장
         const parent = container.parentElement;
         if (parent && parent.lastElementChild !== container) {
             parent.appendChild(container);
         }
 
-        // currentJudge가 없을 경우를 대비한 기본 이름
         const judgeName = (currentJudge && currentJudge.name) ? currentJudge.name : '심사위원';
         const dateStr = new Date().toLocaleDateString();
+        const watermarkText = `${judgeName} | 보안 심사 | ${dateStr}`;
 
+        // 기존 엘리먼트들 가져오기
+        let items = container.querySelectorAll('.watermark-item');
         const count = 10;
 
-        // 균일한 배치를 위해 3x4 그리드 구조 사용
         const cols = 4;
         const rows = 3;
         const cellWidth = 100 / cols;
@@ -996,39 +993,44 @@ if (currentJudge) {
                 positions.push({ r, c });
             }
         }
-        // 위치를 무작위로 섞고 필요한 개수(count)만큼만 사용
         positions.sort(() => Math.random() - 0.5);
 
         for (let i = 0; i < count; i++) {
-            const item = document.createElement('div');
-            item.className = 'watermark-item dynamic-float';
-            item.innerText = `${judgeName} | 보안 심사 | ${dateStr}`;
-            item.style.position = 'absolute';
+            let item = items[i];
+            
+            // 엘리먼트가 없으면 생성 (최초 1회만)
+            if (!item) {
+                item = document.createElement('div');
+                item.className = 'watermark-item dynamic-float';
+                item.style.position = 'absolute';
+                item.style.color = 'rgba(255, 255, 255, 1)';
+                item.style.fontSize = '18px';
+                item.style.fontWeight = '700';
+                item.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.9)';
+                item.style.pointerEvents = 'none';
+                item.style.whiteSpace = 'nowrap';
+                item.style.transform = `rotate(-25deg)`;
+                item.style.zIndex = '9999';
+                container.appendChild(item);
+            }
 
+            // 내용 및 위치만 업데이트
+            item.innerText = watermarkText;
             const pos = positions[i];
-
-            // 각 셀(칸)의 시작 x, y 좌표
             const baseLeft = pos.c * cellWidth;
             const baseTop = pos.r * cellHeight;
-
-            // 셀 내부에서 여백을 두고 약간의 무작위성(Jitter) 부여
             const jitterX = Math.random() * (cellWidth * 0.5);
             const jitterY = Math.random() * (cellHeight * 0.5);
 
             item.style.left = (baseLeft + jitterX) + '%';
             item.style.top = (baseTop + jitterY) + '%';
+        }
 
-            // 작품 위에서도 더 잘 보이도록 완전한 흰색(불투명도 1.0)으로 수정
-            item.style.color = 'rgba(255, 255, 255, 1)';
-            item.style.fontSize = '18px';
-            item.style.fontWeight = '700';
-            item.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.9)';
-            item.style.pointerEvents = 'none';
-            item.style.whiteSpace = 'nowrap';
-            item.style.transform = `rotate(-25deg)`;
-            item.style.zIndex = '9999'; // 개별 아이템도 최상단 보장
-
-            container.appendChild(item);
+        // 혹시 10개보다 많으면 제거 (유지보수용 안전장치)
+        if (items.length > count) {
+            for (let i = count; i < items.length; i++) {
+                container.removeChild(items[i]);
+            }
         }
     }
 
@@ -1456,6 +1458,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
+
+    // [성능 최적화] 리사이즈 디바운싱: 창 크기 조절 시 자원 소모 최소화
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            createWatermark();
+        }, 200);
+    });
 });
 
 console.log("KODAF 2026 High-Security Engine (Pre-emptive) Initialized.");
