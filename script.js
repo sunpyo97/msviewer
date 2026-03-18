@@ -56,6 +56,45 @@ if (currentJudge) {
     }
 
     let currentData = { judges: [], videos: [], results: [] };
+    
+    // ===== 메모리 관리를 위한 Blob URL 추적 및 해제 로직 =====
+    window.activeBlobUrls = new Set();
+    function safeCreateObjectURL(file) {
+        if (!file) return null;
+        const url = URL.createObjectURL(file);
+        window.activeBlobUrls.add(url);
+        console.log(`[Memory] Blob URL Created: ${url}. Total active: ${window.activeBlobUrls.size}`);
+        return url;
+    }
+
+    function revokeAllBlobUrls(exceptionUrl = null) {
+        // 1. 현재 열려 있는 모든 팝업창에서 사용 중인 Blob URL 수집 (보호 대상)
+        const protectedUrls = new Set();
+        if (window.openedPopups) {
+            window.openedPopups.forEach(item => {
+                if (item.win && !item.win.closed && item.blobUrl) {
+                    protectedUrls.add(item.blobUrl);
+                }
+            });
+        }
+
+        // 2. 예외 URL(현재 메인 뷰어에서 로드된 것 등) 추가
+        if (exceptionUrl) protectedUrls.add(exceptionUrl);
+
+        // 3. 보호되지 않은 URL만 해제
+        window.activeBlobUrls.forEach(url => {
+            if (!protectedUrls.has(url)) {
+                URL.revokeObjectURL(url);
+                window.activeBlobUrls.delete(url);
+                console.log(`[Memory] Blob URL Revoked: ${url}`);
+            } else {
+                console.log(`[Memory] Blob URL Protected (In use by popup or active): ${url}`);
+            }
+        });
+    }
+    // 페이지 종료 시 모든 Blob 해제
+    window.addEventListener('beforeunload', () => revokeAllBlobUrls());
+    // ===== 메모리 관리 로직 끝 =====
 
     function getStoredData() {
         console.log("KODAF Judge: Initializing Firebase Data Listener...");
@@ -70,8 +109,9 @@ if (currentJudge) {
             const dbRef = window.firebaseRef(window.firebaseDB);
             const adminDataRef = window.firebaseChild(dbRef, 'adminData');
 
-            window.firebaseOnValue(adminDataRef, (snapshot) => {
-                console.log("KODAF Judge: Firebase Snapshot Received. exists:", snapshot.exists());
+            // 트래픽 최적화: onValue(실시간) 대신 get(1회성) 사용
+            window.firebaseGet(adminDataRef).then((snapshot) => {
+                console.log("KODAF Judge: Firebase Initial Data Received. exists:", snapshot.exists());
                 if (snapshot.exists()) {
                     currentData = snapshot.val();
                     
@@ -91,6 +131,9 @@ if (currentJudge) {
 
                 window.currentData = currentData;
                 window.dispatchEvent(new Event('judgeDataLoaded'));
+            }).catch(e => {
+                console.error("데이터 초기 로딩 실패:", e);
+                alert("서버 데이터를 가져오지 못했습니다. 새로고침해 주세요.");
             });
         } catch (e) {
             console.error("Firebase 로딩 에러:", e);
@@ -130,12 +173,14 @@ if (currentJudge) {
         const popup = window.open(secureViewerUrl, '_blank', `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes`);
 
         if (popup) {
-            openedPopups.push(popup);
+            const popupEntry = { win: popup, blobUrl: isLocal ? url : null };
+            openedPopups.push(popupEntry);
             // 팝업이 닫힐 때 배열에서 제거
             const timer = setInterval(() => {
                 if (popup.closed) {
                     clearInterval(timer);
-                    openedPopups = openedPopups.filter(p => p !== popup);
+                    const index = window.openedPopups.indexOf(popupEntry);
+                    if (index > -1) window.openedPopups.splice(index, 1);
                 }
             }, 1000);
         }
@@ -439,9 +484,13 @@ if (currentJudge) {
         const iframeTag = document.getElementById('documentViewer');
 
         const playSource = async (driveId, isLocalObj = false, type = 'video') => {
-
+            // 다른 비디오 로드 시 이전 Blob 메모리 정리 (단, 현재 로컬 객체가 사용 중이면 제외)
             if (videoTag.src.startsWith('blob:') && videoTag.src !== isLocalObj) {
-                URL.revokeObjectURL(videoTag.src);
+                // URL.revokeObjectURL(videoTag.src); // revokeAllBlobUrls에서 일괄 처리
+            }
+            if (!isLocalObj) {
+                // 로컬 파일이 아닌 드라이브 등을 볼 때, 기존 로컬 파일 Blob들은 모두 정리
+                revokeAllBlobUrls();
             }
 
             videoTag.style.display = 'none';
@@ -735,7 +784,8 @@ if (currentJudge) {
 
                         selectEl.addEventListener('change', (e) => {
                             const idx = e.target.value;
-                            playSource(null, URL.createObjectURL(files[idx]), video.mainType === 'doc');
+                            const objectUrl = safeCreateObjectURL(files[idx]);
+                            playSource(null, objectUrl, video.mainType === 'doc');
                         });
 
                         playlistContainer.appendChild(selectEl);
@@ -747,7 +797,8 @@ if (currentJudge) {
                             btn.onclick = () => {
                                 document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
                                 btn.classList.add('active');
-                                playSource(null, URL.createObjectURL(file), video.mainType === 'doc');
+                                const objectUrl = safeCreateObjectURL(file);
+                            playSource(null, objectUrl, video.mainType === 'doc');
                             };
                             playlistContainer.appendChild(btn);
                         });
@@ -758,11 +809,13 @@ if (currentJudge) {
                         btnMain.onclick = () => {
                             document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
                             btnMain.classList.add('active');
-                            playSource(null, URL.createObjectURL(files[0]), video.mainType === 'doc');
+                            const objectUrl = safeCreateObjectURL(files[0]);
+                        playSource(null, objectUrl, video.mainType === 'doc');
                         };
                         playlistContainer.appendChild(btnMain);
                     }
-                    playSource(null, URL.createObjectURL(files[0]), video.mainType === 'doc');
+                    const firstUrl = safeCreateObjectURL(files[0]);
+                    playSource(null, firstUrl, video.mainType === 'doc');
                 }
             } catch (err) {
                 console.error('Video load error:', err);
@@ -784,7 +837,10 @@ if (currentJudge) {
                         playSource(video.appFormDriveId, false, true);
                     } else {
                         const fileObj = await getVideoFile(video.id + '_appForm');
-                        if (fileObj) playSource(null, URL.createObjectURL(fileObj), true);
+                        if (fileObj) {
+                        const objectUrl = safeCreateObjectURL(fileObj);
+                        playSource(null, objectUrl, true);
+                    }
                     }
                 };
                 playlistContainer.appendChild(btnApp);
@@ -802,7 +858,10 @@ if (currentJudge) {
                         popoutDocument(video.appFormDriveId, false);
                     } else {
                         const fileObj = await getVideoFile(video.id + '_appForm');
-                        if (fileObj) popoutDocument(URL.createObjectURL(fileObj), true);
+                        if (fileObj) {
+                            const objectUrl = safeCreateObjectURL(fileObj);
+                            popoutDocument(objectUrl, true);
+                        }
                     }
                 };
                 playlistContainer.appendChild(btnAppPop);
@@ -820,7 +879,10 @@ if (currentJudge) {
                         playSource(video.addDescDriveId, false, true);
                     } else {
                         const fileObj = await getVideoFile(video.id + '_addDesc');
-                        if (fileObj) playSource(null, URL.createObjectURL(fileObj), true);
+                        if (fileObj) {
+                        const objectUrl = safeCreateObjectURL(fileObj);
+                        playSource(null, objectUrl, true);
+                    }
                     }
                 };
                 playlistContainer.appendChild(btnDesc);
@@ -838,7 +900,10 @@ if (currentJudge) {
                         popoutDocument(video.addDescDriveId, false);
                     } else {
                         const fileObj = await getVideoFile(video.id + '_addDesc');
-                        if (fileObj) popoutDocument(URL.createObjectURL(fileObj), true);
+                        if (fileObj) {
+                            const objectUrl = safeCreateObjectURL(fileObj);
+                            popoutDocument(objectUrl, true);
+                        }
                     }
                 };
                 playlistContainer.appendChild(btnDescPop);
@@ -1348,7 +1413,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (_isPopupFocused) return;
         
         const isFocusOnPopupByDoc = _openedPopups.some(p => {
-            try { return p && !p.closed && p.document.hasFocus(); } catch (e) { return false; }
+            try { return p.win && !p.win.closed && p.win.document.hasFocus(); } catch (e) { return false; }
         });
         if (isFocusOnPopupByDoc) return;
 
@@ -1368,7 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('mouseleave', () => {
         if (window._isDialogOpen) return;
         const _openedPopups = window.openedPopups || [];
-        if (_openedPopups.some(p => p && !p.closed)) return;
+        if (_openedPopups.some(p => p.win && !p.win.closed)) return;
         
         // mouseleave 시 즉시 블랙아웃 걸지 않고 화면만 가림. 클릭 방어 (복귀 버튼 없이)
         if (blackout && !isCaptureLocked) {
@@ -1381,6 +1446,16 @@ document.addEventListener('DOMContentLoaded', () => {
             removeBlackout();
         }
     });
+
+    // 데이터 수동 갱신 버튼 로직
+    const refreshBtn = document.getElementById('refreshDataBtn');
+    if (refreshBtn) {
+        refreshBtn.onclick = () => {
+            if (confirm('최신 심사 데이터를 서버에서 다시 불러오시겠습니까?')) {
+                getStoredData();
+            }
+        };
+    }
 });
 
 console.log("KODAF 2026 High-Security Engine (Pre-emptive) Initialized.");
