@@ -1,36 +1,31 @@
-(function() {
-"use strict";
 console.log("KODAF script.js: Script evaluation start.");
 // 보안 설정 및 데이터 로드 영역
 const SECURE_STORAGE_KEY = 'secure_judge_data';
 
 // ===== 다이얼로그 보안 예외 처리 =====
 // alert/confirm/prompt 호출 시 보안 화면이 뜨지 않도록 플래그 관리
+window._isDialogOpen = false;
 (function () {
-    let _isDialogOpen = false;
     const _origAlert = window.alert.bind(window);
     const _origConfirm = window.confirm.bind(window);
     const _origPrompt = window.prompt.bind(window);
-    
-    // 내부적으로 다이얼로그 상태를 체크할 수 있게 노출 (노출 최소화)
-    window.checkDialogOpen = () => _isDialogOpen;
-
     window.alert = function (msg) {
-        _isDialogOpen = true;
+        window._isDialogOpen = true;
         try { return _origAlert(msg); } finally {
-            setTimeout(() => { _isDialogOpen = false; }, 100);
+            // 브라우저 blur 이벤트가 비동기로 올 수 있으므로 약간 지연 후 해제
+            setTimeout(() => { window._isDialogOpen = false; }, 100);
         }
     };
     window.confirm = function (msg) {
-        _isDialogOpen = true;
+        window._isDialogOpen = true;
         try { return _origConfirm(msg); } finally {
-            setTimeout(() => { _isDialogOpen = false; }, 100);
+            setTimeout(() => { window._isDialogOpen = false; }, 100);
         }
     };
     window.prompt = function (msg, def) {
-        _isDialogOpen = true;
+        window._isDialogOpen = true;
         try { return _origPrompt(msg, def); } finally {
-            setTimeout(() => { _isDialogOpen = false; }, 100);
+            setTimeout(() => { window._isDialogOpen = false; }, 100);
         }
     };
 })();
@@ -63,20 +58,20 @@ if (currentJudge) {
     let currentData = { judges: [], videos: [], results: [] };
     
     // ===== 메모리 관리를 위한 Blob URL 추적 및 해제 로직 =====
-    const activeBlobUrls = new Set();
+    window.activeBlobUrls = new Set();
     function safeCreateObjectURL(file) {
         if (!file) return null;
         const url = URL.createObjectURL(file);
-        activeBlobUrls.add(url);
-        console.log(`[Memory] Blob URL Created: ${url}. Total active: ${activeBlobUrls.size}`);
+        window.activeBlobUrls.add(url);
+        console.log(`[Memory] Blob URL Created: ${url}. Total active: ${window.activeBlobUrls.size}`);
         return url;
     }
 
     function revokeAllBlobUrls(exceptionUrl = null) {
         // 1. 현재 열려 있는 모든 팝업창에서 사용 중인 Blob URL 수집 (보호 대상)
         const protectedUrls = new Set();
-        if (openedPopups) {
-            openedPopups.forEach(item => {
+        if (window.openedPopups) {
+            window.openedPopups.forEach(item => {
                 if (item.win && !item.win.closed && item.blobUrl) {
                     protectedUrls.add(item.blobUrl);
                 }
@@ -87,10 +82,10 @@ if (currentJudge) {
         if (exceptionUrl) protectedUrls.add(exceptionUrl);
 
         // 3. 보호되지 않은 URL만 해제
-        activeBlobUrls.forEach(url => {
+        window.activeBlobUrls.forEach(url => {
             if (!protectedUrls.has(url)) {
                 URL.revokeObjectURL(url);
-                activeBlobUrls.delete(url);
+                window.activeBlobUrls.delete(url);
                 console.log(`[Memory] Blob URL Revoked: ${url}`);
             } else {
                 console.log(`[Memory] Blob URL Protected (In use by popup or active): ${url}`);
@@ -104,6 +99,7 @@ if (currentJudge) {
     function getStoredData() {
         console.log("KODAF Judge: Initializing Firebase Data Listener...");
         try {
+            // Firebase가 로드될 때까지 약간 대기 (모듈 로딩 순서 대응)
             if (!window.firebaseRef || !window.firebaseDB) {
                 console.warn("KODAF Judge: Firebase not ready. Retrying in 500ms...");
                 setTimeout(getStoredData, 500);
@@ -113,15 +109,18 @@ if (currentJudge) {
             const dbRef = window.firebaseRef(window.firebaseDB);
             const adminDataRef = window.firebaseChild(dbRef, 'adminData');
 
+            // 트래픽 최적화: onValue(실시간) 대신 get(1회성) 사용
             window.firebaseGet(adminDataRef).then((snapshot) => {
                 console.log("KODAF Judge: Firebase Initial Data Received. exists:", snapshot.exists());
                 if (snapshot.exists()) {
                     currentData = snapshot.val();
                     
+                    // Normalize results: convert object to array if needed
                     if (currentData.results && !Array.isArray(currentData.results)) {
                         currentData.results = Object.values(currentData.results);
                     }
-                    console.log("KODAF Judge: Data loaded successfully."); // 객체 로그 출력 제거
+                    
+                    console.log("KODAF Judge: Data loaded successfully.", currentData);
                 } else {
                     console.warn("KODAF Judge: No data found at adminData node!");
                 }
@@ -130,6 +129,7 @@ if (currentJudge) {
                 if (!currentData.videos) currentData.videos = [];
                 if (!currentData.results) currentData.results = [];
 
+                window.currentData = currentData;
                 window.dispatchEvent(new Event('judgeDataLoaded'));
             }).catch(e => {
                 console.error("데이터 초기 로딩 실패:", e);
@@ -141,8 +141,10 @@ if (currentJudge) {
     }
 
     // 팝업 창 추적을 위한 전역 변수
-    const openedPopups = [];
-    let isPopupFocused = false;
+    window.openedPopups = [];
+    window.isPopupFocused = false;
+    let openedPopups = window.openedPopups;
+    let isPopupFocused = window.isPopupFocused;
 
     window.addEventListener('message', (e) => {
         if (e.data === 'trusted-popup-focus') {
@@ -177,8 +179,8 @@ if (currentJudge) {
             const timer = setInterval(() => {
                 if (popup.closed) {
                     clearInterval(timer);
-                    const index = openedPopups.indexOf(popupEntry);
-                    if (index > -1) openedPopups.splice(index, 1);
+                    const index = window.openedPopups.indexOf(popupEntry);
+                    if (index > -1) window.openedPopups.splice(index, 1);
                 }
             }, 1000);
         }
@@ -187,6 +189,7 @@ if (currentJudge) {
 
     // 초기화 즉시 실행
     // getStoredData() call removed from here to prevent race condition
+    window.currentData = currentData;
 
     // 이미지 기반 상세 배점표 데이터
     const JUDGING_SCHEMA = {
@@ -266,9 +269,8 @@ if (currentJudge) {
         if (!currentJudge) return;
 
         // 카테고리 구성 (데이터 로드 완료 여부 체크)
-        if (currentData && currentData.videos && currentData.videos.length > 0) {
+        if (window.currentData) {
             const mainSelect = document.getElementById('mainCategorySelect');
-            if (!mainSelect) return;
 
             // allowedMainCategories가 객체로 올 경우 대비하여 배열로 변환
             let allowed = currentJudge.allowedMainCategories || Object.keys(JUDGING_SCHEMA);
@@ -365,7 +367,7 @@ if (currentJudge) {
 
     // 영상 목록 필터링 및 업데이트 함수
     function updateVideoList(mainCat, subCat) {
-        const videoData = currentData?.videos || [];
+        const videoData = window.currentData?.videos || [];
 
         const videoSelect = document.getElementById('videoSelect');
         videoSelect.innerHTML = '';
@@ -1112,8 +1114,8 @@ const onDataLoaded = () => {
 
 window.addEventListener('judgeDataLoaded', onDataLoaded);
 
-// 만약 이미 데이터가 존재한다면(이례적인 케이스) 즉시 실행
-if (currentData && currentData.videos && currentData.videos.length > 0) {
+// 만약 이미 데이터가 window에 존재한다면(이례적인 케이스) 즉시 실행
+if (window.currentData && window.currentData.videos && window.currentData.videos.length > 0) {
     console.log("KODAF Judge: Data already present, triggering UI init.");
     onDataLoaded();
 } else {
@@ -1127,7 +1129,7 @@ if (submitBtn) {
 
     newSubmitBtn.addEventListener('click', () => {
         const currentVideoIndex = document.getElementById('videoSelect').value;
-        const video = currentData.videos[currentVideoIndex];
+        const video = window.currentData.videos[currentVideoIndex];
         if (!video) return;
 
         const scores = {};
@@ -1194,7 +1196,7 @@ if (myScoresBtn && myScoresModal) {
         if (!tbody) return;
         tbody.innerHTML = '';
 
-        const results = (currentData.results || []).filter(r => r.judgeId === currentJudge.id);
+        const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
 
         if (results.length === 0) {
             tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">제출한 심사 결과가 없습니다.</td></tr>`;
@@ -1217,7 +1219,7 @@ if (myScoresBtn && myScoresModal) {
 
                 if (mainSelect && subSelect && videoSelect) {
                     // 해당 비디오의 카테고리 정보 찾기
-                    const video = currentData.videos.find(v => v.id === res.videoId);
+                    const video = window.currentData.videos.find(v => v.id === res.videoId);
                     if (video) {
                         // 현재 심사했던 카테고리(res.mainCat, res.subCat)로 먼저 전환
                         mainSelect.value = res.mainCat;
@@ -1241,7 +1243,7 @@ if (myScoresBtn && myScoresModal) {
                         updateVideoList(res.mainCat, subSelect.value);
 
                         // 3. 영상 선택 dropdown에서 해당 영상 선택
-                        const targetIndex = currentData.videos.findIndex(v => v.id === res.videoId);
+                        const targetIndex = window.currentData.videos.findIndex(v => v.id === res.videoId);
                         if (targetIndex !== -1) {
                             videoSelect.value = targetIndex;
                             loadVideo(targetIndex); // 즉시 로드
@@ -1276,7 +1278,7 @@ if (myScoresBtn && myScoresModal) {
     }
 
     exportMyScoresBtn.addEventListener('click', () => {
-        const results = (currentData.results || []).filter(r => r.judgeId === currentJudge.id);
+        const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
         if (results.length === 0) {
             alert('다운로드할 데이터가 없습니다.');
             return;
@@ -1402,16 +1404,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('blur', () => { 
         // 다이얼로그(alert/confirm 등) 예외 처리
-        if (window.checkDialogOpen && window.checkDialogOpen()) return;
+        if (window._isDialogOpen) return;
         
         // 클릭된 요소가 문서 뷰어(iframe)인 경우 예외 처리
         if (document.activeElement && document.activeElement.id === 'documentViewer') return;
         
         // 팝업창(secure-viewer) 포커스 예외 처리
-        const _isPopupFocused = isPopupFocused || false;
+        const _openedPopups = window.openedPopups || [];
+        const _isPopupFocused = window.isPopupFocused || false;
         if (_isPopupFocused) return;
         
-        const isFocusOnPopupByDoc = openedPopups.some(p => {
+        const isFocusOnPopupByDoc = _openedPopups.some(p => {
             try { return p.win && !p.win.closed && p.win.document.hasFocus(); } catch (e) { return false; }
         });
         if (isFocusOnPopupByDoc) return;
@@ -1421,7 +1424,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     window.addEventListener('focus', () => {
-        isPopupFocused = false;
+        window.isPopupFocused = false;
         removeBlackout();
     });
 
@@ -1430,8 +1433,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 마우스 이탈 선제 차단 (예외 처리 포함)
     document.addEventListener('mouseleave', () => {
-        if (window.checkDialogOpen && window.checkDialogOpen()) return;
-        if (openedPopups.some(p => p.win && !p.win.closed)) return;
+        if (window._isDialogOpen) return;
+        const _openedPopups = window.openedPopups || [];
+        if (_openedPopups.some(p => p.win && !p.win.closed)) return;
         
         // mouseleave 시 즉시 블랙아웃 걸지 않고 화면만 가림. 클릭 방어 (복귀 버튼 없이)
         if (blackout && !isCaptureLocked) {
@@ -1469,5 +1473,3 @@ console.log("KODAF 2026 High-Security Engine (Pre-emptive) Initialized.");
 
 // Kick off data loading last to avoid race conditions
 getStoredData();
-
-})();
