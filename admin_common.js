@@ -100,6 +100,25 @@ function getAdminData() {
         window.firebaseOnValue(adminDataRef, (snapshot) => {
             if (snapshot.exists()) {
                 currentAdminData = snapshot.val();
+                
+                // [Migration & Normalization]
+                // If results is an array in Firebase, migrate it to object structure
+                if (currentAdminData.results && Array.isArray(currentAdminData.results)) {
+                    console.log("KODAF Admin: Migrating legacy array results to object structure...");
+                    const legacyResults = currentAdminData.results;
+                    const migratedObj = {};
+                    legacyResults.forEach(res => {
+                        const id = `${res.judgeId}_${res.videoId}_${res.mainCat}_${res.subCat}`.replace(/[^a-zA-Z0-9_]/g, '_');
+                        migratedObj[id] = res;
+                    });
+                    // Update Firebase to object structure
+                    window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData/results'), migratedObj);
+                    // Keep as array locally for immediate use
+                    currentAdminData.results = legacyResults;
+                } else if (currentAdminData.results) {
+                    // Convert object from Firebase to array for local dashboard compatibility
+                    currentAdminData.results = Object.values(currentAdminData.results);
+                }
             } else {
                 // 기본 초기 데이터 쓰기
                 currentAdminData = {
@@ -107,12 +126,12 @@ function getAdminData() {
                         { id: "judge_01", name: "김광고", password: "password123", allowedMainCategories: ["integrated_marketing", "marketing_campaign", "performance", "digital_creative", "ai_creative"] }
                     ],
                     videos: [],
-                    results: []
+                    results: {} // New structure starts as object
                 };
                 saveAdminData();
             }
 
-            // 배열 누락 방지
+            // 배열 누락 방지 (results는 로컬에서는 항상 배열로 유지)
             if (!currentAdminData.judges) currentAdminData.judges = [];
             if (!currentAdminData.videos) currentAdminData.videos = [];
             if (!currentAdminData.results) currentAdminData.results = [];
@@ -144,14 +163,26 @@ window.currentAdminData = currentAdminData;
 
 function saveAdminData() {
     console.log("KODAF Admin: Saving to Firebase...", currentAdminData);
-    window.currentAdminData = currentAdminData;
+    
+    // results가 로컬에서는 배열이므로, Firebase 저장 전에 객체로 변환 (동시성 방지를 위해 서버는 객체 구조 유지)
+    const resultsObj = {};
+    if (Array.isArray(currentAdminData.results)) {
+        currentAdminData.results.forEach(res => {
+            const id = `${res.judgeId}_${res.videoId}_${res.mainCat}_${res.subCat}`.replace(/[^a-zA-Z0-9_]/g, '_');
+            resultsObj[id] = res;
+        });
+    }
 
-    // Firebase 저장
-    window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData'), currentAdminData)
+    const dataToSave = {
+        ...currentAdminData,
+        results: resultsObj
+    };
+
+    window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData'), dataToSave)
         .then(() => {
             console.log("KODAF Admin: Firebase Sync Success!");
             // 로컬 스토리지에 백업 (브라우저 종료 대비)
-            localStorage.setItem(SECURE_STORAGE_KEY, JSON.stringify(currentAdminData));
+            localStorage.setItem(SECURE_STORAGE_KEY, JSON.stringify(dataToSave));
         })
         .catch(err => {
             console.error("KODAF Admin: Firebase Sync Failed!", err);

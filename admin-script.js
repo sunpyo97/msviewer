@@ -86,7 +86,13 @@ function getStoredData() {
         results: []
     };
     const stored = localStorage.getItem(SECURE_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : defaultData;
+    const data = stored ? JSON.parse(stored) : defaultData;
+    
+    // Normalize results for local UI compatibility
+    if (data.results && !Array.isArray(data.results)) {
+        data.results = Object.values(data.results);
+    }
+    return data;
 }
 
 const currentData = getStoredData();

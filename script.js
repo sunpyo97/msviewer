@@ -74,6 +74,12 @@ if (currentJudge) {
                 console.log("KODAF Judge: Firebase Snapshot Received. exists:", snapshot.exists());
                 if (snapshot.exists()) {
                     currentData = snapshot.val();
+                    
+                    // Normalize results: convert object to array if needed
+                    if (currentData.results && !Array.isArray(currentData.results)) {
+                        currentData.results = Object.values(currentData.results);
+                    }
+                    
                     console.log("KODAF Judge: Data loaded successfully.", currentData);
                 } else {
                     console.warn("KODAF Judge: No data found at adminData node!");
@@ -1083,24 +1089,10 @@ if (submitBtn) {
             timestamp: new Date().toISOString()
         };
 
-        if (!window.currentData.results) window.currentData.results = [];
-
-        // Check for existing score by the same judge for the same video and same category
-        const existingIndex = window.currentData.results.findIndex(r =>
-            r.judgeId === currentJudge.id &&
-            r.videoId === video.id &&
-            r.mainCat === result.mainCat &&
-            r.subCat === result.subCat
-        );
-        if (existingIndex !== -1) {
-            // Update existing record
-            window.currentData.results[existingIndex] = result;
-        } else {
-            // Add new record
-            window.currentData.results.push(result);
-        }
-
-        window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData/results'), window.currentData.results)
+        // Use a unique key for each result to prevent race conditions (Judge ID + Video ID + Category)
+        const resultPathId = `${result.judgeId}_${result.videoId}_${result.mainCat}_${result.subCat}`.replace(/[^a-zA-Z0-9_]/g, '_');
+        
+        window.firebaseSet(window.firebaseRef(window.firebaseDB, `adminData/results/${resultPathId}`), result)
             .then(() => { alert('심사 결과가 성공적으로 등록/수정되었습니다. 수고하셨습니다.'); })
             .catch((error) => {
                 console.error('제출 저장 실패:', error);
