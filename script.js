@@ -512,8 +512,12 @@ if (currentJudge) {
                 if (type === 'folder') {
                     // 폴더는 preview가 아니라 embeddedfolderview를 사용해야 격자 형태로 내용이 보입니다.
                     iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
+                } else if (type === 'ppt') {
+                    // PPT/PPTX: Microsoft Office Online Viewer 사용 (폰트 렌더링 우수, 내장 동영상 지원)
+                    const fileUrl = `https://drive.google.com/uc?export=download&id=${cleanId}`;
+                    iframeTag.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
                 } else {
-                    // 이미지, PPT, 문서 등 모든 파일은 /preview 형식을 사용합니다.
+                    // 이미지, PDF, 문서 등 모든 파일은 /preview 형식을 사용합니다.
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 }
                 iframeTag.onload = () => {
@@ -1158,9 +1162,18 @@ if (submitBtn) {
 
         // Use a unique key for each result to prevent race conditions (Judge ID + Video ID + Category)
         const resultPathId = `${result.judgeId}_${result.videoId}_${result.mainCat}_${result.subCat}`.replace(/[^a-zA-Z0-9_]/g, '_');
-        
         window.firebaseSet(window.firebaseRef(window.firebaseDB, `adminData/results/${resultPathId}`), result)
-            .then(() => { alert('심사 결과가 성공적으로 등록/수정되었습니다. 수고하셨습니다.'); })
+            .then(() => { 
+                const existingIdx = window.currentData.results.findIndex(
+                    r => r.judgeId === result.judgeId && r.videoId === result.videoId && r.mainCat === result.mainCat && r.subCat === result.subCat
+                );
+                if (existingIdx !== -1) {
+                    window.currentData.results[existingIdx] = result;
+                } else {
+                    window.currentData.results.push(result);
+                }
+                alert('심사 결과가 성공적으로 등록/수정되었습니다. 수고하셨습니다.'); 
+            })
             .catch((error) => {
                 console.error('제출 저장 실패:', error);
                 alert('점수 저장에 실패했습니다. 관리자에게 문의하세요.');
@@ -1326,6 +1339,14 @@ if (myScoresBtn && myScoresModal) {
         document.body.removeChild(link);
     });
 } // <--- End of if (myScoresBtn && myScoresModal)
+
+const refreshDataBtn = document.getElementById('refreshDataBtn');
+if (refreshDataBtn) {
+    refreshDataBtn.addEventListener('click', () => {
+        getStoredData();
+        alert('데이터를 최신 상태로 갱신했습니다.');
+    });
+}
 
 // === 보안 강화 로직 (Pre-emptive Blackout) ===
 document.addEventListener('DOMContentLoaded', () => {
