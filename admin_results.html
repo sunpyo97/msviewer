@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>심사 결과 대시보드 - 관리자 패널</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.0">
 </head>
 
 <body class="admin-container">
@@ -58,6 +58,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
 
     <script src="firebase-config.js"></script>
+    <script src="judging-schema.js"></script>
     <script src="admin_common.js"></script>
     <script>
         window.initAdminSidebar();
@@ -110,7 +111,7 @@
                 const s = res.scores || {};
 
                 row.innerHTML = `
-                    <td style="font-size:0.75rem;">${new Date(res.timestamp).toLocaleTimeString()}</td>
+                    <td style="font-size:0.75rem;">${new Date(res.timestamp).toLocaleString('ko-KR', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</td>
                     <td>${res.judgeName}</td>
                     <td style="font-weight:bold; color:var(--primary-color);">${res.videoId}</td>
                     <td style="font-size:0.75rem;">[${mainName}>${subName}] ${res.videoTitle}</td>
@@ -143,7 +144,7 @@
                 const row = [
                     res.timestamp, res.judgeId, res.judgeName,
                     JUDGING_SCHEMA[res.mainCat]?.name, JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name,
-                    res.videoId, res.videoTitle,
+                    res.videoId, `"${(res.videoTitle || '').replace(/"/g, '""')}"`,
                     s.strategic, s.technical, s.artistic, s.delivery, s.performance,
                     `"${res.comment || ''}"`, res.total
                 ].join(',');

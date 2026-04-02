@@ -1,0 +1,23 @@
+# 개발/AI 참고용 파일 제외
+all_code_for_gemini.txt
+system_context_for_ai.txt
+claude_handover_full.txt
+feature_specifications.txt
+old_script_tmp.js
+check.cjs
+check_old.cjs
+test_logs.cjs
+test-error.html
+implementation_plan.md
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# 기타
+node_modules
+*.md

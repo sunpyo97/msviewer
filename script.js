@@ -148,10 +148,10 @@ if (currentJudge) {
 
     window.addEventListener('message', (e) => {
         if (e.data === 'trusted-popup-focus') {
-            isPopupFocused = true;
+            window.isPopupFocused = true;
             document.body.classList.remove('secure-blur');
         } else if (e.data === 'trusted-popup-blur') {
-            isPopupFocused = false;
+            window.isPopupFocused = false;
             // 지연 후에 실제로 어떤 창도 포커스가 없다면 차단
             setTimeout(() => {
                 if (!document.hasFocus() && !isPopupFocused) {
@@ -191,78 +191,8 @@ if (currentJudge) {
     // getStoredData() call removed from here to prevent race condition
     window.currentData = currentData;
 
-    // 이미지 기반 상세 배점표 데이터
-    const JUDGING_SCHEMA = {
-        "integrated_marketing": {
-            name: "통합마케팅",
-            sub: {
-                "default": { name: "-", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } }
-            }
-        },
-        "marketing_campaign": {
-            name: "마케팅/캠페인",
-            sub: {
-                "data_marketing": { name: "데이터활용마케팅", weights: { strategic: 30, technical: 25, artistic: 5, delivery: 5, performance: 35 } },
-                "sns_marketing": { name: "SNS마케팅", weights: { strategic: 30, technical: 5, artistic: 15, delivery: 25, performance: 25 } },
-                "ecommerce_ad": { name: "이커머스 광고", weights: { strategic: 30, technical: 5, artistic: 5, delivery: 10, performance: 50 } },
-                "promotion": { name: "프로모션", weights: { strategic: 30, technical: 20, artistic: 10, delivery: 10, performance: 30 } },
-                "techtainment": { name: "테크테인먼트", weights: { strategic: 30, technical: 30, artistic: 20, delivery: 10, performance: 10 } }
-            }
-        },
-        "performance": {
-            name: "퍼포먼스",
-            sub: {
-                "integrated_perf": { name: "통합 퍼포먼스", weights: { strategic: 30, technical: 10, artistic: 10, delivery: 20, performance: 30 } },
-                "app_perf": { name: "앱 퍼포먼스", weights: { strategic: 30, technical: 10, artistic: 10, delivery: 20, performance: 30 } },
-                "search_perf_large": { name: "검색 퍼포먼스(대형)", weights: { strategic: 30, technical: 0, artistic: 0, delivery: 20, performance: 50 } },
-                "search_perf_mid": { name: "검색 퍼포먼스(중형)", weights: { strategic: 30, technical: 0, artistic: 0, delivery: 20, performance: 50 } },
-                "search_perf_small": { name: "검색 퍼포먼스(소형)", weights: { strategic: 30, technical: 0, artistic: 0, delivery: 20, performance: 50 } },
-                "perf_creative": { name: "퍼포먼스크리에이티브", weights: { strategic: 20, technical: 15, artistic: 20, delivery: 15, performance: 30 } }
-            }
-        },
-        "digital_creative": {
-            name: "디지털 크리에이티브",
-            sub: {
-                "visual_creative": { name: "비주얼크리에이티브", weights: { strategic: 20, technical: 10, artistic: 30, delivery: 30, performance: 10 } },
-                "short_form": { name: "디지털영상(숏폼)", weights: { strategic: 10, technical: 10, artistic: 50, delivery: 25, performance: 5 } },
-                "short_film": { name: "디지털영상(단편)", weights: { strategic: 10, technical: 10, artistic: 50, delivery: 25, performance: 5 } },
-                "series": { name: "디지털영상(시리즈)", weights: { strategic: 10, technical: 10, artistic: 50, delivery: 25, performance: 5 } }
-            }
-        },
-        "ai_creative": {
-            name: "AI크리에이티브",
-            sub: {
-                "ai_story": { name: "AI스토리", weights: { strategic: 15, technical: 25, artistic: 25, delivery: 25, performance: 10 } },
-                "ai_visual": { name: "AI비주얼", weights: { strategic: 15, technical: 25, artistic: 25, delivery: 25, performance: 10 } },
-                "ai_campaign": { name: "AI캠페인", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } }
-            }
-        },
-        "tech_solution": {
-            name: "테크/솔루션",
-            sub: {
-                "marketing_tech": { name: "마케팅테크", weights: { strategic: 40, technical: 40, artistic: 0, delivery: 0, performance: 20 } },
-                "ad_tech": { name: "애드테크", weights: { strategic: 40, technical: 40, artistic: 0, delivery: 0, performance: 20 } },
-                "ai_tech_innovation": { name: "AI기술혁신", weights: { strategic: 40, technical: 40, artistic: 0, delivery: 0, performance: 20 } }
-            }
-        },
-        "digital_pr": {
-            name: "디지털PR",
-            sub: {
-                "public_pr": { name: "공공PR", weights: { strategic: 20, technical: 10, artistic: 20, delivery: 30, performance: 20 } },
-                "csr": { name: "CSR(기업의 사회적 책임)", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } },
-                "crisis": { name: "위기·평판관리PR", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } },
-                "marketing_pr": { name: "마케팅PR", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } }
-            }
-        },
-        "special_category": {
-            name: "특별부문",
-            sub: {
-                "global_campaign": { name: "글로벌 캠페인", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } },
-                "public_sector": { name: "공공분야", weights: { strategic: 20, technical: 10, artistic: 20, delivery: 40, performance: 10 } },
-                "digital_signage": { name: "디지털 사이지니", weights: { strategic: 20, technical: 20, artistic: 20, delivery: 20, performance: 20 } }
-            }
-        }
-    };
+    // 배점표 스키마는 judging-schema.js에서 로드 (window.JUDGING_SCHEMA)
+    const JUDGING_SCHEMA = window.JUDGING_SCHEMA;
 
     // UI 초기화 함수 (데이터 형식 유연성 확보)
     function initUI() {
@@ -857,7 +787,6 @@ if (currentJudge) {
                 btnAppPop.style.cssText = 'margin-left: 2px; border-color: #10b981; padding: 2px 8px; font-size: 14px;';
                 btnAppPop.onclick = async (e) => {
                     e.stopPropagation();
-                    let url = '';
                     if (video.appFormDriveId) {
                         popoutDocument(video.appFormDriveId, false);
                     } else {
@@ -899,7 +828,6 @@ if (currentJudge) {
                 btnDescPop.style.cssText = 'margin-left: 2px; border-color: #8b5cf6; padding: 2px 8px; font-size: 14px;';
                 btnDescPop.onclick = async (e) => {
                     e.stopPropagation();
-                    let url = '';
                     if (video.addDescDriveId) {
                         popoutDocument(video.addDescDriveId, false);
                     } else {
@@ -1126,7 +1054,7 @@ if (window.currentData && window.currentData.videos && window.currentData.videos
     console.log("KODAF Judge: Waiting for judgeDataLoaded event...");
 }
 
-const submitBtn = document.querySelector('.btn.primary');
+const submitBtn = document.querySelector('.action-buttons .btn.primary');
 if (submitBtn) {
     const newSubmitBtn = submitBtn.cloneNode(true);
     submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
@@ -1156,7 +1084,7 @@ if (submitBtn) {
             mainCat: document.getElementById('mainCategorySelect').value,
             subCat: document.getElementById('subCategorySelect').value,
             scores: scores, comment: document.getElementById('judgeComment').value,
-            total: document.getElementById('totalValue').innerText,
+            total: parseInt(document.getElementById('totalValue').innerText) || 0,
             timestamp: new Date().toISOString()
         };
 
@@ -1189,15 +1117,20 @@ const exportMyScoresBtn = document.getElementById('exportMyScoresBtn');
 
 if (myScoresBtn && myScoresModal) {
     myScoresBtn.addEventListener('click', () => {
-        renderMyScores();
-        myScoresModal.style.display = 'flex';
+        try {
+            renderMyScores();
+            myScoresModal.style.display = 'flex';
+        } catch (error) {
+            console.error('내 심사 결과 렌더링 중 오류:', error);
+            alert('결과를 불러오는 중 오류가 발생했습니다: ' + error.message);
+        }
     });
 
     closeMyScoresBtn.addEventListener('click', () => {
         myScoresModal.style.display = 'none';
     });
 
-    // 외부 클리 시 닫기
+    // 외부 클릭 시 닫기
     window.addEventListener('click', (e) => {
         if (e.target === myScoresModal) {
             myScoresModal.style.display = 'none';
@@ -1208,6 +1141,11 @@ if (myScoresBtn && myScoresModal) {
         const tbody = document.getElementById('myScoresBody');
         if (!tbody) return;
         tbody.innerHTML = '';
+
+        if (!window.currentData) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">서버에서 데이터를 불러오는 중입니다. 잠시 후 다시 시도해주세요.</td></tr>`;
+            return;
+        }
 
         const results = (window.currentData.results || []).filter(r => r.judgeId === currentJudge.id);
 
@@ -1329,14 +1267,15 @@ if (myScoresBtn && myScoresModal) {
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
+        const csvUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", url);
+        link.setAttribute("href", csvUrl);
         const dateStr = new Date().toLocaleDateString('ko-KR').replace(/\. /g, '').replace('.', '');
         link.setAttribute("download", `내_심사결과_${currentJudge.name}_${dateStr}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(csvUrl);
     });
 } // <--- End of if (myScoresBtn && myScoresModal)
 
@@ -1469,16 +1408,6 @@ document.addEventListener('DOMContentLoaded', () => {
             removeBlackout();
         }
     });
-
-    // 데이터 수동 갱신 버튼 로직
-    const refreshBtn = document.getElementById('refreshDataBtn');
-    if (refreshBtn) {
-        refreshBtn.onclick = () => {
-            if (confirm('최신 심사 데이터를 서버에서 다시 불러오시겠습니까?')) {
-                getStoredData();
-            }
-        };
-    }
 
     // [성능 최적화] 리사이즈 디바운싱: 창 크기 조절 시 자원 소모 최소화
     let resizeTimer;

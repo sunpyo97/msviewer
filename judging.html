@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>보안 광고 심사 시스템 - 프로토타입</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <title>보안 광고 심사 시스템 - KODAF 2026</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap"
         rel="stylesheet">
@@ -148,11 +148,10 @@
                 </div>
 
                 <div class="action-buttons">
-                    <button class="btn secondary">임시 저장</button>
                     <button class="btn primary">최종 제출</button>
                 </div>
 
-                <p class="security-note">※ 최종 제출 후에는 점수 수정이 불가능하며, 모든 활동은 보안 로그에 기록됩니다.</p>
+                <p class="security-note">※ 동일 작품에 대해 재제출 시 이전 결과가 갱신됩니다. 모든 활동은 보안 로그에 기록됩니다.</p>
             </div>
         </section>
     </main>
@@ -162,6 +161,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
 
     <script src="firebase-config.js"></script>
+    <script src="judging-schema.js"></script>
     <script src="video-db.js"></script>
 
     <!-- 내 심사 결과 모달 -->

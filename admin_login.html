@@ -66,23 +66,42 @@
             돌아가기</a>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const accessBtn = document.getElementById('accessBtn');
             const adminPassInput = document.getElementById('adminPass');
             const errorMsg = document.getElementById('errorMsg');
 
-            accessBtn.addEventListener('click', () => {
+            accessBtn.addEventListener('click', async () => {
                 const enteredPass = adminPassInput.value;
-                const actualPass = localStorage.getItem('kodaf_admin_pass') || 'admin123';
-
-                if (enteredPass === actualPass) {
-                    sessionStorage.setItem('kodaf_admin_auth', 'true');
-                    const redirectUrl = localStorage.getItem('admin_redirect_url') || 'admin_accounts.html';
-                    location.href = redirectUrl;
-                } else {
-                    errorMsg.style.display = 'block';
-                    adminPassInput.style.borderColor = 'var(--primary-color)';
+                
+                try {
+                    // Firebase에서 관리자 비밀번호 읽기
+                    const snapshot = await db.ref('adminConfig/adminPassword').get();
+                    const actualPass = snapshot.exists() ? snapshot.val() : 'admin123';
+                    
+                    if (enteredPass === actualPass) {
+                        sessionStorage.setItem('kodaf_admin_auth', 'true');
+                        const redirectUrl = localStorage.getItem('admin_redirect_url') || 'admin_accounts.html';
+                        location.href = redirectUrl;
+                    } else {
+                        errorMsg.style.display = 'block';
+                        adminPassInput.style.borderColor = 'var(--primary-color)';
+                    }
+                } catch (e) {
+                    // Firebase 실패 시 localStorage 폴백
+                    const fallbackPass = localStorage.getItem('kodaf_admin_pass') || 'admin123';
+                    if (enteredPass === fallbackPass) {
+                        sessionStorage.setItem('kodaf_admin_auth', 'true');
+                        const redirectUrl = localStorage.getItem('admin_redirect_url') || 'admin_accounts.html';
+                        location.href = redirectUrl;
+                    } else {
+                        errorMsg.style.display = 'block';
+                        adminPassInput.style.borderColor = 'var(--primary-color)';
+                    }
                 }
             });
 

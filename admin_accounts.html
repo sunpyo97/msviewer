@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>심사위원 계정 관리 - 관리자 패널</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2.0">
 </head>
 
 <body class="admin-container">
@@ -29,7 +29,7 @@
                     <input type="text" id="newJudgeId" placeholder="judge_02">
 
                     <label>패스워드 설정</label>
-                    <input type="text" id="newJudgePassword" placeholder="1234">
+                    <input type="password" id="newJudgePassword" placeholder="비밀번호 입력">
 
                     <label style="margin-top: 10px; display: block;">심사 허용 대분류</label>
                     <div id="categoryCheckboxes"
@@ -103,6 +103,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
 
     <script src="firebase-config.js"></script>
+    <script src="judging-schema.js"></script>
     <script src="admin_common.js"></script>
     <script>
         // 사이드바 및 데이터 로드
@@ -119,7 +120,7 @@
                 row.innerHTML = `
                     <td>${j.name}</td>
                     <td><span class="account-id-pw">${j.id}</span></td>
-                    <td><span class="account-id-pw">${j.password}</span></td>
+                    <td><span class="account-id-pw">••••••</span></td>
                     <td style="font-size:0.8rem;">${catCount}개 부문</td>
                     <td>
                         <button class="btn secondary" style="padding: 4px 8px; font-size:0.7rem;" onclick="window.deleteJudge(${index})">삭제</button>
@@ -176,12 +177,19 @@
         }
 
         // 관리자 암호 변경 기능
-        function changeAdminPassword() {
+        async function changeAdminPassword() {
             const currentPass = document.getElementById('currentAdminPass').value;
             const newPass = document.getElementById('newAdminPass').value;
             const confirmPass = document.getElementById('confirmAdminPass').value;
 
-            const actualPass = localStorage.getItem('kodaf_admin_pass') || 'admin123';
+            // Firebase에서 현재 비밀번호 읽기
+            let actualPass = 'admin123';
+            try {
+                const snapshot = await db.ref('adminConfig/adminPassword').get();
+                if (snapshot.exists()) actualPass = snapshot.val();
+            } catch (e) {
+                actualPass = localStorage.getItem('kodaf_admin_pass') || 'admin123';
+            }
 
             if (currentPass !== actualPass) {
                 alert('현재 암호가 일치하지 않습니다.');
@@ -199,10 +207,15 @@
             }
 
             if (confirm('관리자 암호를 변경하시겠습니까?\n변경 후 세션이 종료됩니다.')) {
-                localStorage.setItem('kodaf_admin_pass', newPass);
-                alert('관리자 암호가 성공적으로 변경되었습니다. 새로운 암호로 다시 접속해주세요.');
-                sessionStorage.removeItem('kodaf_admin_auth');
-                location.href = 'admin_login.html';
+                try {
+                    await db.ref('adminConfig/adminPassword').set(newPass);
+                    localStorage.setItem('kodaf_admin_pass', newPass); // 폴백용 백업
+                    alert('관리자 암호가 성공적으로 변경되었습니다. 새로운 암호로 다시 접속해주세요.');
+                    sessionStorage.removeItem('kodaf_admin_auth');
+                    location.href = 'admin_login.html';
+                } catch (e) {
+                    alert('암호 변경에 실패했습니다. 인터넷 연결을 확인해주세요.');
+                }
             }
         }
     </script>
