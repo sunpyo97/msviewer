@@ -1210,7 +1210,7 @@ if (myScoresBtn && myScoresModal) {
             });
 
             const mainCatName = JUDGING_SCHEMA[res.mainCat]?.name || res.mainCat;
-            const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name || res.subCat;
+            const subCatName = JUDGING_SCHEMA[res.mainCat]?.sub?.[res.subCat]?.name || res.subCat;
             const scores = res.scores || {};
 
             tr.innerHTML = `
