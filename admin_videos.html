@@ -119,13 +119,18 @@
                 const subKey = v.subCategory || v.subCat || '';
                 const mainCatName = JUDGING_SCHEMA[mainKey]?.name || mainKey || '-';
                 const subCatName = JUDGING_SCHEMA[mainKey]?.sub?.[subKey]?.name || subKey || '-';
-                const metaType = v.metaType || v.mainType || 'video';
+                // metaType: 신버전, mainType: 구버전, type: 그 이전 버전
+                const metaType = v.metaType || v.mainType || v.type || '';
+                const isVideo = metaType === 'video';
+                const isDoc = metaType === 'doc' || metaType === 'ppt' || metaType === 'document';
+                const badgeColor = isVideo ? '#ef4444' : isDoc ? '#3b82f6' : '#6b7280';
+                const badgeLabel = metaType ? metaType.toUpperCase() : '미지정';
 
                 row.innerHTML = `
                     <td style="font-weight: bold; max-width: 200px; white-space: normal; word-break: break-all;">${v.title || '-'}</td>
                     <td style="font-size: 0.8rem; color: #555;">${v.id || '-'}</td>
                     <td style="font-size: 0.85rem;">${mainCatName}<br><span style="color:#888;">${subCatName}</span></td>
-                    <td><span class="status-badge" style="background: ${metaType === 'video' ? 'var(--primary-color)' : '#9ca3af'};">${metaType.toUpperCase()}</span></td>
+                    <td><span class="status-badge" style="background:${badgeColor}; color:#fff; border-color:${badgeColor};">${badgeLabel}</span></td>
                     <td>
                         <button class="btn secondary" style="padding: 4px 8px; font-size:0.7rem;" onclick="window.deleteVideo(${index})">삭제</button>
                     </td>
