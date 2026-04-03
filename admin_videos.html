@@ -71,6 +71,66 @@
                 <hr style="margin: 20px 0;">
 
                 <h4>대량 일괄 등록</h4>
+
+                <!-- ① 구글 드라이브 폴더 연동 -->
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+                    <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 0.9rem; color: #1e40af;">📁 구글 드라이브 폴더에서 직접 불러오기</p>
+                    <label style="font-size: 0.8rem; color: #555;">폴더 공유 링크 또는 폴더 ID</label>
+                    <input type="text" id="driveFolderUrl" placeholder="https://drive.google.com/drive/folders/..." style="width:100%; margin: 4px 0 8px 0; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; box-sizing: border-box;">
+                    <label style="font-size: 0.8rem; color: #555;">Google Drive API 키 <span style="color:#6b7280; font-weight:400;">(GCP 콘솔 → API 및 서비스 → 사용자 인증 정보 → API 키)</span></label>
+                    <input type="text" id="driveApiKey" placeholder="AIzaSy..." style="width:100%; margin: 4px 0 8px 0; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; box-sizing: border-box; font-family: monospace;">
+                    <p style="margin: 0 0 10px 0; font-size: 0.75rem; color: #6b7280;">※ 폴더 공유 설정이 <strong>"링크가 있는 모든 사용자"</strong>로 되어 있어야 합니다. API 키는 브라우저에서만 사용되며 서버에 전송되지 않습니다.</p>
+                    <button class="btn primary" id="loadDriveFolderBtn" style="width:100%;">폴더 파일 목록 불러오기</button>
+                </div>
+
+                <!-- 폴더 불러오기 결과 패널 -->
+                <div id="driveFolderPanel" style="display:none; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:14px; margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <strong id="driveFolderTitle" style="color:#15803d; font-size:0.9rem;"></strong>
+                        <button id="driveFolderCancelBtn" style="background:none;border:none;cursor:pointer;color:#888;font-size:1.1rem;">✕</button>
+                    </div>
+
+                    <!-- 카테고리 일괄 적용 -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:10px; align-items:end;">
+                        <div>
+                            <label style="font-size:0.75rem; color:#555; display:block; margin-bottom:3px;">대분류 (일괄 적용)</label>
+                            <select id="driveMainCat" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem;"></select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#555; display:block; margin-bottom:3px;">소분류 (일괄 적용)</label>
+                            <select id="driveSubCat" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem;"></select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#555; display:block; margin-bottom:3px;">출품번호 접두사</label>
+                            <input type="text" id="driveIdPrefix" placeholder="예: AD-" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; box-sizing:border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#555; display:block; margin-bottom:3px;">시작 번호</label>
+                            <input type="number" id="driveIdStart" value="1" min="1" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.8rem; box-sizing:border-box;">
+                        </div>
+                    </div>
+                    <button class="btn secondary" id="driveApplyCatBtn" style="width:100%; margin-bottom:10px; font-size:0.8rem;">위 설정 목록에 일괄 적용</button>
+
+                    <!-- 파일 목록 테이블 -->
+                    <div style="overflow-x:auto; max-height:250px; overflow-y:auto; border-radius:6px; border:1px solid #86efac;">
+                        <table style="width:100%; font-size:0.75rem; border-collapse:collapse; background:white;">
+                            <thead>
+                                <tr style="background:#dcfce7; position:sticky; top:0;">
+                                    <th style="padding:5px 8px; border-bottom:1px solid #86efac; text-align:left; min-width:80px;">출품번호</th>
+                                    <th style="padding:5px 8px; border-bottom:1px solid #86efac; text-align:left;">작품명 (파일명)</th>
+                                    <th style="padding:5px 8px; border-bottom:1px solid #86efac; text-align:left; min-width:70px;">유형</th>
+                                    <th style="padding:5px 8px; border-bottom:1px solid #86efac; text-align:left; min-width:60px;">드라이브 ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driveFolderBody"></tbody>
+                        </table>
+                    </div>
+                    <button id="driveFolderRegisterBtn" class="btn primary" style="width:100%; margin-top:10px;">목록의 파일 모두 등록하기</button>
+                </div>
+
+                <hr style="margin: 14px 0; border-color: #e2e8f0;">
+
+                <!-- ② CSV 파일 업로드 -->
                 <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">
                     형식: <code>출품번호, 작품명, 출품사, 대분류키, 소분류키, 유형(video/doc), 드라이브ID</code><br>
                     예시: <code>AD-001, 삼성 캠페인, 삼성전자, marketing_campaign, sns_marketing, video, 1IgWs...</code>
@@ -316,6 +376,177 @@
             initCategoryDropdowns();
             window.renderVideoList();
         }
+
+        // ===== 구글 드라이브 폴더 연동 로직 =====
+        let driveFileRows = []; // 불러온 파일 목록
+
+        function extractFolderId(input) {
+            if (!input) return '';
+            // folders/ID 패턴
+            const m1 = input.match(/\/folders\/([a-zA-Z0-9_-]{10,})/);
+            if (m1) return m1[1];
+            // id= 파라미터
+            const m2 = input.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+            if (m2) return m2[1];
+            // 순수 ID만 입력한 경우
+            if (/^[a-zA-Z0-9_-]{15,}$/.test(input.trim())) return input.trim();
+            return '';
+        }
+
+        function mimeToType(mimeType) {
+            if (!mimeType) return 'doc';
+            if (mimeType.startsWith('video/')) return 'video';
+            if (mimeType === 'application/vnd.google-apps.folder') return 'folder';
+            if (mimeType === 'application/pdf') return 'doc';
+            if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'ppt';
+            return 'doc';
+        }
+
+        function initDriveCategoryDropdowns() {
+            const mainSel = document.getElementById('driveMainCat');
+            const subSel  = document.getElementById('driveSubCat');
+            mainSel.innerHTML = '';
+            Object.keys(JUDGING_SCHEMA).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = JUDGING_SCHEMA[key].name;
+                mainSel.appendChild(opt);
+            });
+            function refreshSub() {
+                const mc = mainSel.value;
+                subSel.innerHTML = '';
+                if (JUDGING_SCHEMA[mc]?.sub) {
+                    Object.keys(JUDGING_SCHEMA[mc].sub).forEach(sk => {
+                        const opt = document.createElement('option');
+                        opt.value = sk;
+                        opt.innerText = JUDGING_SCHEMA[mc].sub[sk].name;
+                        subSel.appendChild(opt);
+                    });
+                }
+            }
+            mainSel.addEventListener('change', refreshSub);
+            refreshSub();
+        }
+        initDriveCategoryDropdowns();
+
+        function renderDriveFolderTable() {
+            const tbody = document.getElementById('driveFolderBody');
+            tbody.innerHTML = '';
+            driveFileRows.forEach((f, i) => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #dcfce7';
+                tr.innerHTML = `
+                    <td style="padding:4px 8px;"><input data-i="${i}" data-field="id" type="text" value="${f.id}" style="width:90px; padding:3px 5px; border:1px solid #cbd5e1; border-radius:4px; font-size:0.75rem;"></td>
+                    <td style="padding:4px 8px; max-width:200px; word-break:break-all;">${f.title}</td>
+                    <td style="padding:4px 8px;"><span style="background:${f.mainType==='video'?'#ef4444':f.mainType==='doc'?'#3b82f6':f.mainType==='ppt'?'#8b5cf6':'#6b7280'}; color:#fff; padding:2px 7px; border-radius:20px; font-size:0.7rem; font-weight:700;">${f.mainType.toUpperCase()}</span></td>
+                    <td style="padding:4px 8px; font-size:0.7rem; color:#888; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${f.driveId}">${f.driveId.slice(0,12)}...</td>
+                `;
+                // 출품번호 입력 이벤트
+                tr.querySelector('input').addEventListener('change', (e) => {
+                    driveFileRows[i].id = e.target.value.trim();
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('loadDriveFolderBtn').addEventListener('click', async () => {
+            const folderUrl = document.getElementById('driveFolderUrl').value.trim();
+            const apiKey    = document.getElementById('driveApiKey').value.trim();
+            const folderId  = extractFolderId(folderUrl);
+
+            if (!folderId) return alert('올바른 구글 드라이브 폴더 링크 또는 ID를 입력하세요.');
+            if (!apiKey)   return alert('Google Drive API 키를 입력하세요.');
+
+            const btn = document.getElementById('loadDriveFolderBtn');
+            btn.disabled = true;
+            btn.innerText = '불러오는 중...';
+
+            try {
+                let allFiles = [];
+                let pageToken = '';
+                do {
+                    const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=nextPageToken,files(id,name,mimeType)&pageSize=1000&key=${apiKey}${pageToken ? '&pageToken=' + pageToken : ''}`;
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error?.message || `HTTP ${res.status}`);
+                    }
+                    const data = await res.json();
+                    allFiles = allFiles.concat(data.files || []);
+                    pageToken = data.nextPageToken || '';
+                } while (pageToken);
+
+                if (allFiles.length === 0) {
+                    alert('폴더 안에 파일이 없거나 접근 권한이 없습니다.');
+                    return;
+                }
+
+                const prefix  = document.getElementById('driveIdPrefix').value.trim();
+                const startNo = parseInt(document.getElementById('driveIdStart').value) || 1;
+
+                driveFileRows = allFiles.map((f, i) => ({
+                    id:       prefix + String(startNo + i).padStart(3, '0'),
+                    title:    f.name.replace(/\.[^.]+$/, ''), // 확장자 제거
+                    company:  '',
+                    mainCat:  document.getElementById('driveMainCat').value,
+                    subCat:   document.getElementById('driveSubCat').value,
+                    mainType: mimeToType(f.mimeType),
+                    driveId:  f.id
+                }));
+
+                document.getElementById('driveFolderTitle').innerText = `✅ ${allFiles.length}개 파일 인식됨`;
+                renderDriveFolderTable();
+                document.getElementById('driveFolderPanel').style.display = 'block';
+
+            } catch (e) {
+                alert(`불러오기 실패: ${e.message}\n\n구글 드라이브 API가 GCP 프로젝트에서 활성화되어 있는지 확인하세요.`);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '폴더 파일 목록 불러오기';
+            }
+        });
+
+        // 카테고리 일괄 적용 버튼
+        document.getElementById('driveApplyCatBtn').addEventListener('click', () => {
+            const mc = document.getElementById('driveMainCat').value;
+            const sc = document.getElementById('driveSubCat').value;
+            const prefix  = document.getElementById('driveIdPrefix').value.trim();
+            const startNo = parseInt(document.getElementById('driveIdStart').value) || 1;
+            driveFileRows.forEach((f, i) => {
+                f.mainCat = mc;
+                f.subCat  = sc;
+                f.id      = prefix + String(startNo + i).padStart(3, '0');
+            });
+            renderDriveFolderTable();
+        });
+
+        // 패널 닫기
+        document.getElementById('driveFolderCancelBtn').addEventListener('click', () => {
+            driveFileRows = [];
+            document.getElementById('driveFolderPanel').style.display = 'none';
+        });
+
+        // 등록 확정
+        document.getElementById('driveFolderRegisterBtn').addEventListener('click', () => {
+            if (!driveFileRows.length) return;
+            if (!window.currentAdminData.videos) window.currentAdminData.videos = [];
+
+            let added = 0, dup = 0;
+            driveFileRows.forEach(f => {
+                if (!window.currentAdminData.videos.find(v => v.id === f.id)) {
+                    window.currentAdminData.videos.push({ ...f });
+                    added++;
+                } else {
+                    dup++;
+                }
+            });
+
+            driveFileRows = [];
+            document.getElementById('driveFolderPanel').style.display = 'none';
+            window.renderVideoList();
+            window.saveAdminData();
+            alert(`${added}건 등록 완료${dup > 0 ? ` (출품번호 중복 무시: ${dup}건)` : ''}`);
+        });
 
         // ===== CSV 파일 업로드 로직 =====
         let parsedCsvRows = [];
