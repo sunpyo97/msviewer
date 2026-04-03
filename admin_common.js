@@ -1,7 +1,7 @@
 const SECURE_STORAGE_KEY = 'secure_judge_data';
 
-// 배점표 스키마는 judging-schema.js에서 로드 (window.JUDGING_SCHEMA)
-const JUDGING_SCHEMA = window.JUDGING_SCHEMA;
+// JUDGING_SCHEMA는 judging-schema.js에서 전역 const로 선언되므로 여기서 재선언하지 않음.
+// (재선언 시 SyntaxError: Identifier already declared → admin_common.js 전체 실행 중단)
 
 // 데이터 마이그레이션 및 로드
 // 관리자 페이지 보안 체크
