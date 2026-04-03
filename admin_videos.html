@@ -70,14 +70,49 @@
 
                 <hr style="margin: 20px 0;">
 
-                <h4>대량 일괄 등록 (CSV 복사 붙여넣기)</h4>
+                <h4>대량 일괄 등록</h4>
                 <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">
-                    엑셀에서 복사한 데이터를 붙여넣으세요.<br>
                     형식: <code>출품번호, 작품명, 출품사, 대분류키, 소분류키, 유형(video/doc), 드라이브ID</code><br>
                     예시: <code>AD-001, 삼성 캠페인, 삼성전자, marketing_campaign, sns_marketing, video, 1IgWs...</code>
                 </p>
+
+                <!-- CSV 파일 업로드 -->
+                <div id="csvDropZone" style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 10px; transition: background 0.2s, border-color 0.2s; background: #f8fafc;">
+                    <div style="font-size: 1.5rem; margin-bottom: 6px;">📂</div>
+                    <p style="margin: 0; font-size: 0.85rem; color: #555; font-weight: 600;">CSV 파일을 여기에 드래그 &amp; 드롭하거나 클릭하여 선택</p>
+                    <p style="margin: 4px 0 0 0; font-size: 0.75rem; color: #888;">구글 스프레드시트 → 파일 → 다운로드 → .csv 형식으로 내보내기</p>
+                    <input type="file" id="csvFileInput" accept=".csv,.txt" style="display: none;">
+                </div>
+
+                <!-- CSV 미리보기 패널 -->
+                <div id="csvPreviewPanel" style="display: none; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong id="csvPreviewTitle" style="color: #15803d; font-size: 0.9rem;"></strong>
+                        <button id="csvPreviewCancelBtn" style="background: none; border: none; cursor: pointer; color: #888; font-size: 1.1rem; line-height: 1;">✕</button>
+                    </div>
+                    <div style="overflow-x: auto; max-height: 180px; overflow-y: auto;">
+                        <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #dcfce7;">
+                                    <th style="padding: 4px 8px; border: 1px solid #86efac; text-align: left;">출품번호</th>
+                                    <th style="padding: 4px 8px; border: 1px solid #86efac; text-align: left;">작품명</th>
+                                    <th style="padding: 4px 8px; border: 1px solid #86efac; text-align: left;">출품사</th>
+                                    <th style="padding: 4px 8px; border: 1px solid #86efac; text-align: left;">대분류</th>
+                                    <th style="padding: 4px 8px; border: 1px solid #86efac; text-align: left;">소분류</th>
+                                    <th style="padding: 4px 8px; border: 1px solid #86efac; text-align: left;">유형</th>
+                                    <th style="padding: 4px 8px; border: 1px solid #86efac; text-align: left;">드라이브ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="csvPreviewBody"></tbody>
+                        </table>
+                    </div>
+                    <button id="csvConfirmBtn" class="btn primary" style="width: 100%; margin-top: 10px;">파일에서 등록하기</button>
+                </div>
+
+                <hr style="margin: 14px 0; border-color: #e2e8f0;">
+                <p style="font-size: 0.78rem; color: #888; margin-bottom: 6px;">또는 텍스트 직접 붙여넣기</p>
                 <textarea id="bulkDataInput" class="bulk-textarea" placeholder="출품번호, 작품명, 출품사, 대분류코드, 소분류코드, 유형, 드라이브ID"></textarea>
-                <button class="btn secondary" id="bulkAddBtn" style="width: 100%;">엑셀 데이터 일괄 등록</button>
+                <button class="btn secondary" id="bulkAddBtn" style="width: 100%;">텍스트 데이터 일괄 등록</button>
             </div>
 
             <!-- 출품작 목록 섹션 -->
@@ -281,6 +316,150 @@
             initCategoryDropdowns();
             window.renderVideoList();
         }
+
+        // ===== CSV 파일 업로드 로직 =====
+        let parsedCsvRows = [];
+
+        function parseCSVLine(line) {
+            // 쉼표 구분, 큰따옴표 안의 쉼표는 무시
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+                    else { inQuotes = !inQuotes; }
+                } else if (ch === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += ch;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function processCsvText(text) {
+            parsedCsvRows = [];
+            const lines = text.split('\n').filter(l => l.trim());
+            let skipped = 0;
+
+            lines.forEach((line, idx) => {
+                const parts = parseCSVLine(line);
+                if (parts.length < 5) { skipped++; return; }
+                const id      = parts[0] || '';
+                const title   = parts[1] || '';
+                if (!id || !title) { skipped++; return; }
+                parsedCsvRows.push({
+                    id,
+                    title,
+                    company:  parts[2] || '',
+                    mainCat:  parts[3] || '',
+                    subCat:   parts[4] || '',
+                    mainType: (parts[5] || '').toLowerCase() || 'video',
+                    driveId:  extractDriveId(parts[6] || '')
+                });
+            });
+
+            if (parsedCsvRows.length === 0) {
+                alert('유효한 데이터를 찾지 못했습니다. 형식을 확인하세요.');
+                return;
+            }
+
+            // 미리보기 렌더링
+            const previewBody = document.getElementById('csvPreviewBody');
+            previewBody.innerHTML = '';
+            const showRows = parsedCsvRows.slice(0, 10);
+            showRows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:3px 8px; border:1px solid #86efac;">${r.id}</td>
+                    <td style="padding:3px 8px; border:1px solid #86efac;">${r.title}</td>
+                    <td style="padding:3px 8px; border:1px solid #86efac;">${r.company}</td>
+                    <td style="padding:3px 8px; border:1px solid #86efac;">${r.mainCat}</td>
+                    <td style="padding:3px 8px; border:1px solid #86efac;">${r.subCat}</td>
+                    <td style="padding:3px 8px; border:1px solid #86efac;">${r.mainType}</td>
+                    <td style="padding:3px 8px; border:1px solid #86efac; max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.driveId}</td>
+                `;
+                previewBody.appendChild(tr);
+            });
+            if (parsedCsvRows.length > 10) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="7" style="padding:4px 8px; border:1px solid #86efac; color:#888; text-align:center;">... 외 ${parsedCsvRows.length - 10}건 더</td>`;
+                previewBody.appendChild(tr);
+            }
+
+            document.getElementById('csvPreviewTitle').innerText = `✅ ${parsedCsvRows.length}건 인식됨${skipped > 0 ? ` (형식오류/빈행 무시: ${skipped}건)` : ''}`;
+            document.getElementById('csvPreviewPanel').style.display = 'block';
+        }
+
+        // 드롭존 클릭 → 파일 선택
+        document.getElementById('csvDropZone').addEventListener('click', () => {
+            document.getElementById('csvFileInput').click();
+        });
+
+        // 파일 선택
+        document.getElementById('csvFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => processCsvText(ev.target.result);
+            reader.readAsText(file, 'UTF-8');
+            e.target.value = ''; // 같은 파일 재선택 허용
+        });
+
+        // 드래그 & 드롭
+        const dropZone = document.getElementById('csvDropZone');
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#e0f2fe';
+            dropZone.style.borderColor = '#3b82f6';
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.background = '#f8fafc';
+            dropZone.style.borderColor = '#cbd5e1';
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f8fafc';
+            dropZone.style.borderColor = '#cbd5e1';
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => processCsvText(ev.target.result);
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        // 미리보기 취소
+        document.getElementById('csvPreviewCancelBtn').addEventListener('click', () => {
+            parsedCsvRows = [];
+            document.getElementById('csvPreviewPanel').style.display = 'none';
+        });
+
+        // CSV 확정 등록
+        document.getElementById('csvConfirmBtn').addEventListener('click', () => {
+            if (!parsedCsvRows.length) return;
+            if (!window.currentAdminData.videos) window.currentAdminData.videos = [];
+
+            let addedCount = 0, dupCount = 0;
+            parsedCsvRows.forEach(r => {
+                if (!window.currentAdminData.videos.find(v => v.id === r.id)) {
+                    window.currentAdminData.videos.push(r);
+                    addedCount++;
+                } else {
+                    dupCount++;
+                }
+            });
+
+            parsedCsvRows = [];
+            document.getElementById('csvPreviewPanel').style.display = 'none';
+
+            window.renderVideoList();
+            window.saveAdminData();
+            alert(`${addedCount}건 등록 완료${dupCount > 0 ? ` (중복 무시: ${dupCount}건)` : ''}`);
+        });
 
     </script>
 </body>
