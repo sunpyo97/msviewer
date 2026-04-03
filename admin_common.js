@@ -91,25 +91,19 @@ window.currentAdminData = currentAdminData;
 
 function saveAdminData() {
     console.log("KODAF Admin: Saving to Firebase...", currentAdminData);
-    
-    // results가 로컬에서는 배열이므로, Firebase 저장 전에 객체로 변환 (동시성 방지를 위해 서버는 객체 구조 유지)
-    const resultsObj = {};
-    if (Array.isArray(currentAdminData.results)) {
-        currentAdminData.results.forEach(res => {
-            const id = `${res.judgeId}_${res.videoId}_${res.mainCat}_${res.subCat}`.replace(/[^a-zA-Z0-9_]/g, '_');
-            resultsObj[id] = res;
-        });
-    }
 
+    // results는 심사위원들이 adminData/results/{id} 경로로 개별 저장하므로
+    // 관리자 저장에서는 judges와 videos만 부분 업데이트(update).
+    // firebaseSet 대신 firebaseUpdate를 사용하면 results 노드를 건드리지 않아
+    // 동시 제출 중인 심사위원의 데이터가 덮어씌워지는 문제를 방지함.
     const dataToSave = {
-        ...currentAdminData,
-        results: resultsObj
+        judges: currentAdminData.judges || [],
+        videos: currentAdminData.videos || []
     };
 
-    window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData'), dataToSave)
+    window.firebaseUpdate(window.firebaseRef(window.firebaseDB, 'adminData'), dataToSave)
         .then(() => {
             console.log("KODAF Admin: Firebase Sync Success!");
-            // 로컬 스토리지에 백업 (브라우저 종료 대비)
             localStorage.setItem(SECURE_STORAGE_KEY, JSON.stringify(dataToSave));
         })
         .catch(err => {
