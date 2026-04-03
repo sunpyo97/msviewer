@@ -698,148 +698,8 @@ if (currentJudge) {
             }
             playSource(video.driveId, false, isDocType);
         }
-        else if (video.hasFile) {
-            try {
-                const fileData = await getVideoFile(video.id);
-                if (fileData) {
-                    const files = Array.isArray(fileData) ? fileData : [fileData];
-
-                    if (files.length >= 10 && playlistContainer) {
-                        const selectEl = document.createElement('select');
-                        selectEl.className = 'series-select';
-                        selectEl.style.cssText = 'padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: white; font-weight: 600; font-size: 0.9rem;';
-
-                        files.forEach((file, idx) => {
-                            const option = document.createElement('option');
-                            option.value = idx;
-                            option.innerText = `작품 ${idx + 1}`;
-                            selectEl.appendChild(option);
-                        });
-
-                        selectEl.addEventListener('change', (e) => {
-                            const idx = e.target.value;
-                            const objectUrl = safeCreateObjectURL(files[idx]);
-                            playSource(null, objectUrl, video.mainType === 'doc');
-                        });
-
-                        playlistContainer.appendChild(selectEl);
-                    } else if (files.length > 1 && playlistContainer) {
-                        files.forEach((file, idx) => {
-                            const btn = document.createElement('button');
-                            btn.className = `series-btn ${idx === 0 ? 'active' : ''}`;
-                            btn.innerText = `시리즈 ${idx + 1}`;
-                            btn.onclick = () => {
-                                document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
-                                btn.classList.add('active');
-                                const objectUrl = safeCreateObjectURL(file);
-                            playSource(null, objectUrl, video.mainType === 'doc');
-                            };
-                            playlistContainer.appendChild(btn);
-                        });
-                    } else if (playlistContainer && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile)) {
-                        const btnMain = document.createElement('button');
-                        btnMain.className = 'series-btn active';
-                        btnMain.innerText = video.mainType === 'doc' ? '📄 메인 문서' : '🎬 메인 작품';
-                        btnMain.onclick = () => {
-                            document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
-                            btnMain.classList.add('active');
-                            const objectUrl = safeCreateObjectURL(files[0]);
-                        playSource(null, objectUrl, video.mainType === 'doc');
-                        };
-                        playlistContainer.appendChild(btnMain);
-                    }
-                    const firstUrl = safeCreateObjectURL(files[0]);
-                    playSource(null, firstUrl, video.mainType === 'doc');
-                }
-            } catch (err) {
-                console.error('Video load error:', err);
-                videoTag.style.display = 'none';
-                placeholder.style.display = 'flex';
-            }
-        }
-
-        if (playlistContainer) {
-            if (video.appFormDriveId || video.appFormHasFile) {
-                const btnApp = document.createElement('button');
-                btnApp.className = 'series-btn';
-                btnApp.innerText = `📄 신청서`;
-                btnApp.style.marginLeft = '10px'; btnApp.style.borderColor = '#10b981';
-                btnApp.onclick = async () => {
-                    document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
-                    btnApp.classList.add('active');
-                    if (video.appFormDriveId) {
-                        playSource(video.appFormDriveId, false, true);
-                    } else {
-                        const fileObj = await getVideoFile(video.id + '_appForm');
-                        if (fileObj) {
-                        const objectUrl = safeCreateObjectURL(fileObj);
-                        playSource(null, objectUrl, true);
-                    }
-                    }
-                };
-                playlistContainer.appendChild(btnApp);
-
-                // 팝업 버튼 추가
-                const btnAppPop = document.createElement('button');
-                btnAppPop.className = 'series-btn popout-btn';
-                btnAppPop.innerHTML = `↗`;
-                btnAppPop.title = "새 창에서 열기";
-                btnAppPop.style.cssText = 'margin-left: 2px; border-color: #10b981; padding: 2px 8px; font-size: 14px;';
-                btnAppPop.onclick = async (e) => {
-                    e.stopPropagation();
-                    if (video.appFormDriveId) {
-                        popoutDocument(video.appFormDriveId, false);
-                    } else {
-                        const fileObj = await getVideoFile(video.id + '_appForm');
-                        if (fileObj) {
-                            const objectUrl = safeCreateObjectURL(fileObj);
-                            popoutDocument(objectUrl, true);
-                        }
-                    }
-                };
-                playlistContainer.appendChild(btnAppPop);
-            }
-
-            if (video.addDescDriveId || video.addDescHasFile) {
-                const btnDesc = document.createElement('button');
-                btnDesc.className = 'series-btn';
-                btnDesc.innerText = `📄 추가설명서`;
-                btnDesc.style.borderColor = '#8b5cf6';
-                btnDesc.onclick = async () => {
-                    document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
-                    btnDesc.classList.add('active');
-                    if (video.addDescDriveId) {
-                        playSource(video.addDescDriveId, false, true);
-                    } else {
-                        const fileObj = await getVideoFile(video.id + '_addDesc');
-                        if (fileObj) {
-                        const objectUrl = safeCreateObjectURL(fileObj);
-                        playSource(null, objectUrl, true);
-                    }
-                    }
-                };
-                playlistContainer.appendChild(btnDesc);
-
-                // 팝업 버튼 추가
-                const btnDescPop = document.createElement('button');
-                btnDescPop.className = 'series-btn popout-btn';
-                btnDescPop.innerHTML = `↗`;
-                btnDescPop.title = "새 창에서 열기";
-                btnDescPop.style.cssText = 'margin-left: 2px; border-color: #8b5cf6; padding: 2px 8px; font-size: 14px;';
-                btnDescPop.onclick = async (e) => {
-                    e.stopPropagation();
-                    if (video.addDescDriveId) {
-                        popoutDocument(video.addDescDriveId, false);
-                    } else {
-                        const fileObj = await getVideoFile(video.id + '_addDesc');
-                        if (fileObj) {
-                            const objectUrl = safeCreateObjectURL(fileObj);
-                            popoutDocument(objectUrl, true);
-                        }
-                    }
-                };
-                playlistContainer.appendChild(btnDescPop);
-            }
+        else {
+            playSource(video.id, null, isDocType);
         }
         document.getElementById('judgeComment').value = '';
     }
@@ -1100,7 +960,8 @@ if (submitBtn) {
                 } else {
                     window.currentData.results.push(result);
                 }
-                alert('심사 결과가 성공적으로 등록/수정되었습니다. 수고하셨습니다.'); 
+                alert('심사 결과가 저장되었습니다.');
+                goToNextUnscored();
             })
             .catch((error) => {
                 console.error('제출 저장 실패:', error);
@@ -1286,6 +1147,174 @@ if (refreshDataBtn) {
         alert('데이터를 최신 상태로 갱신했습니다.');
     });
 }
+
+// === 다음 미채점 작품 이동 로직 ===
+
+function isVideoScored(videoId, mainCat, subCat) {
+    return (window.currentData.results || []).some(
+        r => r.judgeId === currentJudge.id && r.videoId === videoId && r.mainCat === mainCat && r.subCat === subCat
+    );
+}
+
+function getVideoIndicesForSubCat(mainCat, subCat) {
+    const videos = window.currentData?.videos || [];
+    return videos.reduce((acc, v, idx) => {
+        const cats = v.categories || [{ main: v.mainCat, sub: v.subCat }];
+        if (cats.some(c => c.main === mainCat && (subCat === 'default' || c.sub === subCat || !c.sub))) {
+            acc.push(idx);
+        }
+        return acc;
+    }, []);
+}
+
+function findNextUnscoredVideo(mainCat, subCat, startAfterIdx) {
+    const startIdx = (startAfterIdx === undefined || startAfterIdx === null) ? -1 : startAfterIdx;
+    const indices = getVideoIndicesForSubCat(mainCat, subCat);
+    const videos = window.currentData?.videos || [];
+    // 현재 작품 이후부터 탐색
+    for (const idx of indices) {
+        if (idx > startIdx && !isVideoScored(videos[idx]?.id, mainCat, subCat)) {
+            return idx;
+        }
+    }
+    // 없으면 처음부터 탐색 (wrap-around)
+    for (const idx of indices) {
+        if (!isVideoScored(videos[idx]?.id, mainCat, subCat)) {
+            return idx;
+        }
+    }
+    return null; // 소부문 전체 완료
+}
+
+function resetScoreInputs() {
+    document.querySelectorAll('.score-input').forEach(input => { input.value = 0; });
+    const totalEl = document.getElementById('totalValue');
+    if (totalEl) totalEl.innerText = '0';
+}
+
+function goToNextUnscored() {
+    const mainCat = document.getElementById('mainCategorySelect').value;
+    const subCat = document.getElementById('subCategorySelect').value;
+    const currentVideoIndex = parseInt(document.getElementById('videoSelect').value) || 0;
+
+    const nextIdx = findNextUnscoredVideo(mainCat, subCat, currentVideoIndex);
+    if (nextIdx !== null) {
+        resetScoreInputs();
+        document.getElementById('videoSelect').value = nextIdx;
+        loadVideo(nextIdx);
+    } else {
+        showSubCatCompleteModal(mainCat, subCat);
+    }
+}
+
+function showSubCatCompleteModal(mainCat, subCat) {
+    const modal = document.getElementById('subCatCompleteModal');
+    if (!modal) return;
+
+    const schema = window.JUDGING_SCHEMA;
+    const mainCatName = schema[mainCat]?.name || mainCat;
+    const subCatName = schema[mainCat]?.sub?.[subCat]?.name || subCat;
+
+    document.getElementById('subCatCompleteTitle').innerText = `✅ ${mainCatName} > ${subCatName} 심사 완료!`;
+
+    const nextList = document.getElementById('subCatNextList');
+    nextList.innerHTML = '';
+
+    let allowed = currentJudge.allowedMainCategories || Object.keys(schema);
+    if (allowed && !Array.isArray(allowed)) allowed = Object.values(allowed);
+
+    let foundNext = false;
+
+    // 현재 대분류의 나머지 소분류 먼저 확인
+    const currentMainSubs = schema[mainCat]?.sub || {};
+    const currentMainSubKeys = Object.keys(currentMainSubs);
+    const currentSubIdx = currentMainSubKeys.indexOf(subCat);
+    for (let i = currentSubIdx + 1; i < currentMainSubKeys.length; i++) {
+        const nextSubKey = currentMainSubKeys[i];
+        if (findNextUnscoredVideo(mainCat, nextSubKey) !== null) {
+            const label = `${mainCatName} > ${currentMainSubs[nextSubKey].name}`;
+            nextList.appendChild(createNextNavBtn(label, mainCat, nextSubKey));
+            foundNext = true;
+        }
+    }
+
+    // 이후 다른 허용된 대분류 확인 (첫 번째 미채점 소분류만 노출)
+    for (const mainKey of allowed) {
+        if (mainKey === mainCat || !schema[mainKey]) continue;
+        const subs = schema[mainKey].sub || {};
+        for (const subKey of Object.keys(subs)) {
+            if (findNextUnscoredVideo(mainKey, subKey) !== null) {
+                const label = `${schema[mainKey].name} > ${subs[subKey].name}`;
+                nextList.appendChild(createNextNavBtn(label, mainKey, subKey));
+                foundNext = true;
+                break; // 대분류당 첫 미채점 소분류만 표시
+            }
+        }
+    }
+
+    if (!foundNext) {
+        nextList.innerHTML = '<p style="color: #059669; font-weight: 700; text-align: center; font-size: 1.05rem; padding: 12px 0;">🎉 배정된 모든 부문의 심사가 완료되었습니다!</p>';
+    }
+
+    modal.style.display = 'flex';
+}
+
+function createNextNavBtn(label, mainCat, subCat) {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display: block; width: 100%; margin-bottom: 8px; padding: 12px 16px; font-size: 0.9rem; font-weight: 700; text-align: left; background: #0f172a; color: white; border: none; border-radius: 8px; cursor: pointer;';
+    btn.innerText = `→ ${label}`;
+    btn.onmouseover = () => { btn.style.background = '#1e3a5f'; };
+    btn.onmouseout = () => { btn.style.background = '#0f172a'; };
+    btn.onclick = () => {
+        document.getElementById('subCatCompleteModal').style.display = 'none';
+        navigateToSubCat(mainCat, subCat);
+    };
+    return btn;
+}
+
+function navigateToSubCat(mainCat, subCat) {
+    const schema = window.JUDGING_SCHEMA;
+    const mainSelect = document.getElementById('mainCategorySelect');
+    const subSelect = document.getElementById('subCategorySelect');
+
+    mainSelect.value = mainCat;
+    subSelect.innerHTML = '';
+    if (schema[mainCat]?.sub) {
+        Object.entries(schema[mainCat].sub).forEach(([key, data]) => {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.innerText = data.name;
+            subSelect.appendChild(opt);
+        });
+    }
+    subSelect.value = subCat;
+    renderFields(mainCat, subCat);
+    updateVideoList(mainCat, subCat);
+
+    // updateVideoList가 첫 작품을 로드하지만, 첫 미채점 작품으로 override
+    setTimeout(() => {
+        const nextIdx = findNextUnscoredVideo(mainCat, subCat, -1);
+        if (nextIdx !== null) {
+            resetScoreInputs();
+            document.getElementById('videoSelect').value = nextIdx;
+            loadVideo(nextIdx);
+        }
+    }, 150);
+}
+
+const nextUnscoredBtn = document.getElementById('nextUnscoredBtn');
+if (nextUnscoredBtn) {
+    nextUnscoredBtn.addEventListener('click', goToNextUnscored);
+}
+
+const subCatCompleteCloseBtn = document.getElementById('subCatCompleteCloseBtn');
+if (subCatCompleteCloseBtn) {
+    subCatCompleteCloseBtn.addEventListener('click', () => {
+        document.getElementById('subCatCompleteModal').style.display = 'none';
+    });
+}
+
+// === 다음 미채점 작품 이동 로직 끝 ===
 
 // === 보안 강화 로직 (Pre-emptive Blackout) ===
 document.addEventListener('DOMContentLoaded', () => {

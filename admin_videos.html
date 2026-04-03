@@ -4,172 +4,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출품 영상 관리 - 관리자 패널</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="video-db.js"></script>
+    <title>출품작(영상/문서) 관리 - 관리자 패널</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <style>
+        .bulk-textarea {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 
 <body class="admin-container">
     <main class="admin-main">
         <header class="admin-header">
             <div>
-                <span class="status-badge">Media Management</span>
-                <h2>출품 영상 등록 및 관리</h2>
+                <span class="status-badge">System Active</span>
+                <h2>출품작(영상/문서) 데이터베이스 관리</h2>
             </div>
+            <button class="btn secondary" onclick="window.saveToFirebase()">전체 변경사항 저장</button>
         </header>
 
         <section class="admin-grid">
-            <!-- CSV 대량 등록 섹션 -->
-            <div class="config-group"
-                style="grid-column: 1 / -1; border-left: 5px solid #10b981; background: rgba(16, 185, 129, 0.05);">
-                <h4>⚡ 대량 엑셀(CSV) 일괄 등록</h4>
-                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;">
-                    출품작이 여러 개일 경우 <b>KODAF 폴더 스캐너</b>로 추출한 CSV 파일을 업로드하여 한 번에 1,500개 이상의 정보를 등록할 수 있습니다.
-                </p>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="file" id="batchCsvFile" accept=".csv"
-                        style="flex: 1; padding: 10px; border: 1px bordered var(--border-color); border-radius: 8px;">
-                    <button class="btn primary" id="uploadBatchCsvBtn"
-                        style="background-color: #10b981; border-color: #10b981;">CSV 일괄 등록</button>
-                </div>
-            </div>
-
-            <!-- 영상 단건 등록 섹션 -->
+            <!-- 출품작 생성 섹션 -->
             <div class="config-group">
-                <h4>신규 영상 등록</h4>
+                <h4>신규 출품작 단건 등록</h4>
                 <div class="form-container">
-                    <label>출품 번호</label>
-                    <input type="text" id="vId" placeholder="AD-2026-XXXX">
-                    <label>영상 제목</label>
-                    <input type="text" id="vTitle" placeholder="The Future of AI">
-                    <label>출품사</label>
-                    <input type="text" id="vCompany" placeholder="(주)혁신">
+                    <label>출품작 고유 ID (유튜브/드라이브 ID)</label>
+                    <input type="text" id="newVideoId" placeholder="예: 1IgWscu6jsZVLyspbIeBgbTw_BohoeSRc">
 
-                    <label style="margin-top:10px; display:block;">심사 대분류</label>
-                    <select id="vMainCategory" onchange="updateSubOptions(this.value, 'vSubCategory')">
-                        <option value="integrated_marketing">통합마케팅</option>
-                        <option value="marketing_campaign">마케팅/캠페인</option>
-                        <option value="performance">퍼포먼스</option>
-                        <option value="digital_creative">디지털 크리에이티브</option>
-                        <option value="ai_creative">AI크리에이티브</option>
-                        <option value="tech_solution">테크/솔루션</option>
-                        <option value="digital_pr">디지털PR</option>
-                        <option value="special_category">특별부문</option>
+                    <label>작품 명 (Title)</label>
+                    <input type="text" id="newVideoTitle" placeholder="예: 2026 KODAF 통합 캠페인">
+
+                    <label>대분류 (Main Category)</label>
+                    <select id="newVideoMainCat">
+                        <!-- 스키마로부터 동적 로드 -->
                     </select>
 
-                    <select id="vSubCategory">
-                        <!-- JS dynamic -->
+                    <label>소분류 (Sub Category)</label>
+                    <select id="newVideoSubCat">
+                        <!-- 스키마로부터 동적 로드 -->
                     </select>
 
-                    <button type="button" class="btn secondary" onclick="addSelectedCategory()"
-                        style="width:100%; margin-top:5px; font-size:0.8rem; padding:5px;">+ 부문 추가</button>
+                    <label>자료 유형 (영상/문서)</label>
+                    <select id="newVideoMetaType">
+                        <option value="video">동영상 (유튜브/구글드라이브 영상)</option>
+                        <option value="doc">문서 (구글드라이브 PDF, PPT)</option>
+                    </select>
 
-                    <div id="vSelectedCategories"
-                        style="margin-top:10px; display:flex; flex-wrap:wrap; gap:5px; min-height:30px; padding:10px; border:1px solid var(--border-color); border-radius:8px; background:#f9fafb;">
-                        <!-- Category chips will appear here -->
-                    </div>
-
-                    <label style="margin-top:10px; display:block;">본편 형식</label>
-                    <div style="display: flex; gap: 15px; margin-bottom: 10px;">
-                        <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
-                            <input type="radio" name="mainType" value="video" checked> 영상 (Video)
-                        </label>
-                        <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
-                            <input type="radio" name="mainType" value="doc"> 문서 (PPT, PDF 등)
-                        </label>
-                    </div>
-
-                    <label style="margin-top:10px; display:block;">등록 방식</label>
-                    <div style="display: flex; gap: 15px; margin-bottom: 10px;">
-                        <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
-                            <input type="radio" name="uploadType" value="file" checked
-                                onchange="toggleUploadType(this.value)"> 로컬 파일
-                        </label>
-                        <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px;">
-                            <input type="radio" name="uploadType" value="drive" onchange="toggleUploadType(this.value)">
-                            개별 구글 드라이브 링크
-                        </label>
-                        <label
-                            style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px; color: #10b981; font-weight: bold;">
-                            <input type="radio" name="uploadType" value="folder"
-                                onchange="toggleUploadType(this.value)">
-                            ⚡ 구글 드라이브 폴더 일괄 스캔
-                        </label>
-                    </div>
-
-                    <!-- 1. 로컬 파일 업로드 -->
-                    <div id="fileUploadGroup">
-                        <label style="margin-top:10px; display:block;">[1] 작품 파일 (시리즈일 경우 다중 선택)</label>
-                        <input type="file" id="vFile" accept="video/*,.ppt,.pptx,.pdf" multiple
-                            style="margin-bottom: 15px;">
-
-                        <label style="margin-top:5px; display:block;">[2] 신청서 파일 (PDF 필수)</label>
-                        <input type="file" id="vFileAppForm" accept=".pdf,.ppt,.pptx" style="margin-bottom: 15px;">
-
-                        <label style="margin-top:5px; display:block;">[3] 추가설명서 파일 (PDF/PPT 선택)</label>
-                        <input type="file" id="vFileAddDesc" accept=".pdf,.ppt,.pptx" style="margin-bottom: 20px;">
-                    </div>
-
-                    <!-- 2. 개별 드라이브 구룹 -->
-                    <div id="driveUploadGroup" style="display: none;">
-                        <label style="margin-top:10px; display:block;">[1] 작품 본편 드라이브 링크 (다중 등록 시 콤마 구분)</label>
-                        <input type="text" id="vDriveId" placeholder="예: https://drive.google.com/file/d/... 또는 ID만 입력"
-                            style="margin-bottom: 15px;">
-
-                        <label style="margin-top:5px; display:block;">[2] 신청서 드라이브 링크 (PDF/PPT 추천)</label>
-                        <input type="text" id="vDriveIdAppForm" placeholder="예: https://drive.google.com..."
-                            style="margin-bottom: 15px;">
-
-                        <label style="margin-top:5px; display:block;">[3] 추가설명서 드라이브 링크 (선택)</label>
-                        <input type="text" id="vDriveIdAddDesc" placeholder="예: https://drive.google.com..."
-                            style="margin-bottom: 20px;">
-                        <p
-                            style="font-size: 0.75rem; color: #ff3b3b; margin-top: -10px; margin-bottom: 20px; font-weight: 700;">
-                            * 공유 설정을 '링크가 있는 모든 사용자'로 변경 후 전체 링크를 그대로 복사해서 붙여넣으셔도 됩니다.<br>
-                            * 시리즈 부문 본편 영상 여러 개 입력 시 구글 드라이브 링크들을 쉼표(,)로 이어서 입력하세요.<br>
-                            * PPT 파일은 웹 뷰어 호환성이 좋으므로 로컬 첨부보다 '구글 드라이브 링크' 등록을 적극 권장합니다.
-                        </p>
-                    </div>
-
-                    <!-- 3. 단일 폴더 자동차 스캔 폼 (프론트엔드 API 방식) -->
-                    <div id="folderUploadGroup"
-                        style="display: none; background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #10b981; margin-bottom: 20px;">
-                        <label style="display:block; color: #10b981; font-weight: bold;">[자동화] 출품작 구글 드라이브 폴더 링크 하나만
-                            입력</label>
-                        <div style="display: flex; gap: 10px; margin-top: 5px;">
-                            <input type="text" id="vFolderUrl"
-                                placeholder="예: https://drive.google.com/drive/folders/..." style="flex: 1;">
-                            <button class="btn primary" id="scanFolderBtn"
-                                style="background: #10b981; border: none; white-space: nowrap;">폴더 스캔</button>
-                        </div>
-
-                        <div id="scanResultBox" style="margin-top: 15px; font-size: 0.85rem; display: none;">
-                            <strong style="display:block; margin-bottom:5px;">스캔된 매핑 결과:</strong>
-                            <div style="background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-                                <div id="scanResVideo" style="color: #3b82f6;">🎬 본편: <span class="val">없음</span></div>
-                                <div id="scanResApp" style="color: #10b981;">📄 신청서: <span class="val">없음</span></div>
-                                <div id="scanResDesc" style="color: #8b5cf6;">📄 추가설명: <span class="val">없음</span></div>
-                            </div>
-                            <p style="font-size: 0.7rem; color: #666; margin-top: 5px;">* 확인 후 아래 [영상 등록] 버튼을 누르시면 이
-                                결과대로 자동 부여됩니다.</p>
-                        </div>
-                    </div>
-
-                    <button class="btn primary" id="addVideoBtn" style="width: 100%;">영상 등록</button>
+                    <button class="btn primary" id="addVideoBtn" style="width: 100%; margin-top: 15px;">출품작 등록</button>
                 </div>
+
+                <hr style="margin: 20px 0;">
+
+                <h4>대량 일괄 등록 (CSV 복사 붙여넣기)</h4>
+                <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">
+                    엑셀에서 복사한 데이터를 붙여넣으세요. 형식: ID, 제목, 대분류키, 소분류키, 유형(video/doc)<br>
+                    예시: <code>abc_123, 삼성 캠페인, integrated_marketing, it_service, video</code>
+                </p>
+                <textarea id="bulkDataInput" class="bulk-textarea" placeholder="아이디, 작품명, 대분류코드, 소분류코드, 유형"></textarea>
+                <button class="btn secondary" id="bulkAddBtn" style="width: 100%;">엑셀 데이터 일괄 구문 분석 및 추가</button>
             </div>
 
-            <!-- 영상 목록 섹션 -->
+            <!-- 출품작 목록 섹션 -->
             <div class="config-group">
-                <h4>등록된 영상 목록</h4>
-                <div style="overflow-x: auto;">
+                <h4>등록된 출품작 현황 (<span id="totalVideoCount">0</span>건)</h4>
+                <div style="overflow-x: auto; max-height: 600px; overflow-y: auto;">
                     <table class="results-table">
                         <thead>
                             <tr>
-                                <th>번호</th>
                                 <th>제목</th>
-                                <th>부문</th>
-                                <th>파일</th>
+                                <th>고유 ID</th>
+                                <th>대분류 / 소분류</th>
+                                <th>유형</th>
                                 <th>관리</th>
                             </tr>
                         </thead>
@@ -182,549 +93,169 @@
         </section>
     </main>
 
-    <!-- 파일 관리 모달 -->
-    <div id="fileManagerModal" class="modal"
-        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-        <div class="modal-content"
-            style="background:white; padding:25px; border-radius:12px; width:90%; max-width:700px; max-height:80vh; overflow-y:auto; position:relative;">
-            <button onclick="closeFileManager()"
-                style="position:absolute; top:15px; right:15px; border:none; background:none; font-size:1.5rem; cursor:pointer;">&times;</button>
-            <h3>📁 개별 파일 상세 관리</h3>
-            <p id="fmVideoTitle" style="font-weight:bold; color:var(--primary-color); margin-bottom:15px;"></p>
-
-            <table class="results-table" style="font-size:0.85rem;">
-                <thead>
-                    <tr>
-                        <th>유형</th>
-                        <th>이름(폴더)</th>
-                        <th>드라이브 ID/링크</th>
-                        <th>관리</th>
-                    </tr>
-                </thead>
-                <tbody id="fmFileListBody"></tbody>
-            </table>
-
-            <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
-                <button class="btn secondary" onclick="closeFileManager()">닫기</button>
-                <button class="btn primary" onclick="saveFileChanges()">변경사항 저장</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Firebase JS (Compat version for local file:// execution) -->
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
 
     <script src="firebase-config.js"></script>
-    <script src="admin_common.js"></script>
-    <script src="admin-script.js"></script>
+    <script src="judging-schema.js?v=2.0"></script>
+    <script src="admin_common.js?v=2.0"></script>
     <script>
-        // Firebase objects are on window
+        // 사이드바 및 데이터 로드 초기화
         window.initAdminSidebar();
 
-        window.updateSubOptions('integrated_marketing', 'vSubCategory');
-
-        // 업로드 방식 토글
-        window.toggleUploadType = function (type) {
-            document.getElementById('fileUploadGroup').style.display = type === 'file' ? 'block' : 'none';
-            document.getElementById('driveUploadGroup').style.display = type === 'drive' ? 'block' : 'none';
-            document.getElementById('folderUploadGroup').style.display = type === 'folder' ? 'block' : 'none';
-        };
-
-        // 전역 상태 변수: 폴더 스캔으로 찾은 데이터 보관
-        let scannedSeriesData = [];
-        let scannedAppFormId = null;
-        let scannedAddDescId = null;
-
-        // 선택된 다중 카테고리 보관
-        let selectedCategories = [];
-
-        window.addSelectedCategory = function () {
-            const mainCat = document.getElementById('vMainCategory').value;
-            const subCat = document.getElementById('vSubCategory').value;
-
-            // 중복 체크
-            const isDuplicate = selectedCategories.some(c => c.main === mainCat && c.sub === subCat);
-            if (isDuplicate) return alert('이미 추가된 부문입니다.');
-
-            selectedCategories.push({ main: mainCat, sub: subCat });
-            renderCategoryChips();
-        };
-
-        window.removeCategory = function (index) {
-            selectedCategories.splice(index, 1);
-            renderCategoryChips();
-        };
-
-        function renderCategoryChips() {
-            const container = document.getElementById('vSelectedCategories');
-            container.innerHTML = '';
-
-            selectedCategories.forEach((c, idx) => {
-                const mainName = JUDGING_SCHEMA[c.main]?.name || c.main;
-                const subName = JUDGING_SCHEMA[c.main]?.sub[c.sub]?.name || c.sub;
-
-                const chip = document.createElement('div');
-                chip.style.cssText = 'background:white; border:1px solid var(--primary-color); color:var(--primary-color); padding:4px 8px; border-radius:15px; font-size:0.75rem; display:flex; align-items:center; gap:5px;';
-                chip.innerHTML = `
-                    <span>${mainName} > ${subName}</span>
-                    <span style="cursor:pointer; font-weight:bold; color:#ff3b3b;" onclick="removeCategory(${idx})">&times;</span>
-                `;
-                container.appendChild(chip);
-            });
-        }
-
+        // 관리자 데이터가 로드된 후 실행되는 렌더링 함수
         window.renderVideoList = function () {
             const body = document.getElementById('videoListBody');
             body.innerHTML = '';
 
-            currentAdminData.videos.forEach((v, index) => {
+            const videos = window.currentAdminData.videos || [];
+            document.getElementById('totalVideoCount').innerText = videos.length;
+
+            videos.forEach((v, index) => {
                 const row = document.createElement('tr');
-
-                let categoryHtml = '';
-                if (v.categories && v.categories.length > 0) {
-                    categoryHtml = v.categories.map(c => {
-                        const m = JUDGING_SCHEMA[c.main]?.name || c.main;
-                        const s = JUDGING_SCHEMA[c.main]?.sub[c.sub]?.name || c.sub;
-                        return `<div class="category-tag" style="font-size:0.75rem;">${m} &gt; ${s}</div>`;
-                    }).join('');
-                } else if (v.mainCat && v.subCat) {
-                    const mainName = JUDGING_SCHEMA[v.mainCat]?.name || v.mainCat;
-                    const subName = JUDGING_SCHEMA[v.mainCat]?.sub[v.subCat]?.name || v.subCat;
-                    categoryHtml = `<div class="category-tag" style="font-size:0.75rem;">${mainName} &gt; ${subName}</div>`;
-                } else {
-                    categoryHtml = `<div style="font-size:0.75rem;">-</div>`;
-                }
-
-                let fileStatus = '';
-                const itemsCount = v.seriesData ? v.seriesData.length : (v.driveIds ? v.driveIds.length : (v.hasFile ? v.fileCount : 0));
-
-                if (v.seriesData || v.driveIds || v.driveId) {
-                    fileStatus = `<button class="btn secondary" style="padding: 2px 6px; font-size:0.7rem; background:rgba(59,130,246,0.1); color:#3b82f6; border:1px solid #3b82f6;" onclick="window.openFileManager(${index})">
-                        Manage (${itemsCount}개)
-                    </button>`;
-                } else {
-                    fileStatus = `<span class="status-badge" style="background:${v.hasFile ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'}; color:${v.hasFile ? '#10b981' : '#ef4444'}; border:none;">
-                        ${v.hasFile ? 'Stored' : 'No File'}</span>`;
-                }
-
+                const mainCatName = JUDGING_SCHEMA[v.mainCategory]?.name || v.mainCategory;
+                const subCatName = JUDGING_SCHEMA[v.mainCategory]?.sub?.[v.subCategory]?.name || v.subCategory;
+                
                 row.innerHTML = `
-                    <td>${v.id}</td>
-                    <td>${v.title}</td>
-                    <td>${categoryHtml}</td>
-                    <td>${fileStatus}</td>
-                    <td style="text-align: center;">
-                        <button class="btn secondary" style="padding: 2px 8px;" onclick="window.deleteVideo(${index})">삭제</button>
+                    <td style="font-weight: bold; max-width: 200px; white-space: normal; word-break: break-all;">${v.title}</td>
+                    <td style="font-size: 0.8rem; color: #555;">${v.id}</td>
+                    <td style="font-size: 0.85rem;">${mainCatName}<br><span style="color:#888;">${subCatName}</span></td>
+                    <td><span class="status-badge" style="background: ${v.metaType === 'video' ? 'var(--primary-color)' : '#9ca3af'};">${v.metaType.toUpperCase()}</span></td>
+                    <td>
+                        <button class="btn secondary" style="padding: 4px 8px; font-size:0.7rem;" onclick="window.deleteVideo(${index})">삭제</button>
                     </td>
                 `;
                 body.appendChild(row);
             });
         }
 
-        // ================= 단일 폴더 스캔 로직 (Google Drive API) =================
-        // 주의: 이 기능을 실제 사용하려면 반드시 유효한 Google Cloud API Key를 아래에 입력해야 합니다.
-        const GOOGLE_API_KEY = "AIzaSyCm7hOx1WF320aDZtXyWahLe768bHZjBps";
+        // 스키마 드롭다운 로드
+        function initCategoryDropdowns() {
+            const mainSelect = document.getElementById('newVideoMainCat');
+            const subSelect = document.getElementById('newVideoSubCat');
 
-        document.getElementById('scanFolderBtn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            const folderUrl = document.getElementById('vFolderUrl').value.trim();
-            if (!folderUrl) return alert('폴더 공유 링크를 입력해주세요.');
+            mainSelect.innerHTML = '';
+            Object.keys(JUDGING_SCHEMA).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = JUDGING_SCHEMA[key].name;
+                mainSelect.appendChild(opt);
+            });
 
-            const match = folderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/) || folderUrl.match(/id=([a-zA-Z0-9_-]+)/);
-            const folderId = match ? match[1] : folderUrl;
-
-            if (!folderId) return alert('유효한 폴더 링크가 아닙니다.');
-            if (GOOGLE_API_KEY === "PLEASE_ENTER_YOUR_API_KEY_HERE") {
-                return alert('Google API Key가 설정되지 않았습니다.');
-            }
-
-            const btn = document.getElementById('scanFolderBtn');
-            btn.innerText = "스캔 중...";
-            btn.disabled = true;
-
-            try {
-                scannedSeriesData = [];
-                scannedAppFormId = null;
-                scannedAddDescId = null;
-
-                // 자식 항목들 스캔을 위한 공통 함수 (폴더인 경우 재귀적으로 들어가서 모든 파일을 평탄하게 수집)
-                async function getAllNestedFiles(targetId, parentName = "", allFiles = []) {
-                    const childrenApiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
-                    const childRes = await fetch(childrenApiUrl);
-                    const childData = await childRes.json();
-                    const files = childData.files || [];
-
-                    for (const c of files) {
-                        const cLower = c.name.toLowerCase();
-                        const id = c.id;
-                        const isFolder = c.mimeType === 'application/vnd.google-apps.folder';
-
-                        if (isFolder) {
-                            // 하위 폴더인 경우 재귀 호출로 그 내부 파일들을 가져옴
-                            await getAllNestedFiles(id, c.name, allFiles);
-                        } else {
-                            // 파일인 경우 타입 결정 후 수집
-                            let cType = 'doc';
-                            if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
-                            else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png') || cLower.endsWith('.jpeg')) cType = 'image';
-                            else if (c.mimeType.includes('presentation') || cLower.endsWith('.ppt') || cLower.endsWith('.pptx')) cType = 'ppt';
-
-                            // 파일 이름에 부모 폴더명을 붙여서 어디 소속인지 알 수 있게 함
-                            const displayName = parentName ? `[${parentName}] ${c.name}` : c.name;
-                            allFiles.push({ id: id, name: displayName, type: cType });
-                        }
-                    }
-                    return allFiles;
-                }
-
-                // 1단계 하위 항목들을 시발점으로 스캔 + 폴더인 경우 자식들을 재귀적으로 평탄화
-                async function scanRecursiveWithChildren(targetFolderId) {
-                    const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`);
-                    const data = await response.json();
-                    const files = data.files || [];
-
-                    for (const file of files) {
-                        const nameLower = file.name.toLowerCase();
-                        const id = file.id;
-                        const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
-
-                        if (isFolder) {
-                            // 폴더의 모든 자식들을 재귀적으로 수집 (평탄화)
-                            const children = await getAllNestedFiles(id);
-                            scannedSeriesData.push({ id: id, name: file.name, folderName: file.name, type: 'folder', children: children });
-                        } else {
-                            // 파일 분류
-                            if (file.mimeType.includes('video/') || nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi')) {
-                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'video' });
-                            } else if (nameLower.includes('신청') || nameLower.includes('form') || nameLower.includes('app')) {
-                                scannedAppFormId = id;
-                            } else if (nameLower.includes('설명') || nameLower.includes('desc') || nameLower.includes('보충') || nameLower.includes('자료')) {
-                                scannedAddDescId = id;
-                            } else if (file.mimeType.includes('image/') || nameLower.endsWith('.jpg') || nameLower.endsWith('.png') || nameLower.endsWith('.jpeg')) {
-                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'image' });
-                            } else if (file.mimeType.includes('presentation') || nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) {
-                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'ppt' });
-                            } else if (file.mimeType.includes('pdf') || nameLower.endsWith('.pdf') || file.mimeType.includes('document') || nameLower.endsWith('.docx') || file.mimeType.includes('spreadsheet') || nameLower.endsWith('.xlsx')) {
-                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'doc' });
-                            }
-                        }
-                    }
-                }
-
-                await scanRecursiveWithChildren(folderId);
-
-                if (scannedSeriesData.length === 0 && !scannedAppFormId) {
-                    alert('유효한 파일을 찾지 못했습니다.');
-                } else {
-                    const resultText = scannedSeriesData.map(d => {
-                        if (d.type === 'folder') return `📁 ${d.name} (${d.children.length}개)`;
-                        return (d.folderName ? `[${d.folderName}] ` : '') + d.name;
-                    }).join(', ');
-                    document.getElementById('scanResVideo').innerHTML = `🎬 작품/시리즈: <span style="font-weight:bold; color:#000;">${resultText}</span>`;
-                    document.getElementById('scanResApp').innerHTML = `📄 신청서: <span style="font-weight:bold; color:#000;">${scannedAppFormId || '없음'}</span>`;
-                    document.getElementById('scanResDesc').innerHTML = `📄 추가설명: <span style="font-weight:bold; color:#000;">${scannedAddDescId || '없음'}</span>`;
-                    document.getElementById('scanResultBox').style.display = 'block';
-                }
-
-            } catch (err) {
-                console.error("스캔 실패:", err);
-                alert('스캔 중 오류 발생: ' + err.message);
-            } finally {
-                btn.innerText = "폴더 스캔";
-                btn.disabled = false;
-            }
-        });
-
-        // ================= 영상 등록 등록 =================
-        document.getElementById('addVideoBtn').addEventListener('click', async () => {
-            const vId = document.getElementById('vId').value;
-            const vTitle = document.getElementById('vTitle').value;
-            const vCompany = document.getElementById('vCompany').value;
-
-            if (selectedCategories.length === 0) {
-                // 한 개도 없으면 현재 선택된 것을 자동 추가 시도
-                const main = document.getElementById('vMainCategory').value;
-                const sub = document.getElementById('vSubCategory').value;
-                selectedCategories.push({ main, sub });
-            }
-
-            const mainType = document.querySelector('input[name="mainType"]:checked').value;
-            const uploadType = document.querySelector('input[name="uploadType"]:checked').value;
-            // 본편 파일/ID
-            const vFiles = Array.from(document.getElementById('vFile').files);
-            const vDriveIdInput = document.getElementById('vDriveId').value.trim();
-            // 신청서 파일/ID
-            const vFileAppForm = document.getElementById('vFileAppForm').files[0];
-            const vDriveAppForm = document.getElementById('vDriveIdAppForm').value.trim();
-            // 추가설명서 파일/ID
-            const vFileAddDesc = document.getElementById('vFileAddDesc').files[0];
-            const vDriveAddDesc = document.getElementById('vDriveIdAddDesc').value.trim();
-
-            if (!vId || !vTitle) return alert('필수 정보를 입력하세요.');
-            if (uploadType === 'drive' && (!vDriveIdInput && !vDriveAppForm)) return alert('본편 또는 신청서 드라이브 ID를 입력하세요.');
-            if (uploadType === 'file' && (vFiles.length === 0 && !vFileAppForm)) return alert('본편 또는 신청서 파일을 선택하세요.');
-
-            // 구글 드라이브 URL에서 ID 추출하는 헬퍼 함수
-            const extractDriveId = (urlOrId) => {
-                if (!urlOrId) return '';
-                // /d/ID/view 형식과 id=ID 형식 모두 지원유연하게 처리
-                const match = urlOrId.match(/\/d\/([a-zA-Z0-9_-]+)/) || urlOrId.match(/id=([a-zA-Z0-9_-]+)/);
-                return match ? match[1] : urlOrId;
-            };
-
-            // 구글 드라이브 다중 ID 파싱 (본편만 다중 지원)
-            let finalSeriesData = [];
-            let finalAppFormDriveId = null;
-            let finalAddDescDriveId = null;
-
-            if (uploadType === 'folder') {
-                if (scannedSeriesData.length === 0 && !scannedAppFormId) {
-                    return alert('폴더가 아직 스캔되지 않았습니다.');
-                }
-                finalSeriesData = scannedSeriesData;
-                finalAppFormDriveId = scannedAppFormId;
-                finalAddDescDriveId = scannedAddDescId;
-            } else if (uploadType === 'drive' && vDriveIdInput) {
-                const ids = vDriveIdInput.split(',').map(id => extractDriveId(id.trim())).filter(id => id.length > 0);
-                finalSeriesData = ids.map(id => ({ id: id, name: '시리즈 작품', folderName: '', type: mainType }));
-                finalAppFormDriveId = extractDriveId(vDriveAppForm);
-                finalAddDescDriveId = extractDriveId(vDriveAddDesc);
-            }
-
-            const btn = document.getElementById('addVideoBtn');
-            btn.innerText = "저장 중...";
-            btn.disabled = true;
-
-            const newVideo = {
-                id: vId, title: vTitle, company: vCompany,
-                categories: [...selectedCategories], // 다중 부문 저장 형식
-                mainCat: selectedCategories[0].main, // 하위 호환성 (단일 부문만 지원하는 구버전/결과용)
-                subCat: selectedCategories[0].sub,
-                mainType: mainType,
-                hasFile: uploadType === 'file' && vFiles.length > 0,
-                fileCount: uploadType === 'file' ? vFiles.length : 0,
-                seriesData: finalSeriesData, // 새 구조: [{id, name, folderName, type}, ...]
-                driveIds: finalSeriesData.map(d => d.id), // 하위 호환성 유지
-                // 신청서 메타
-                appFormHasFile: uploadType === 'file' && !!vFileAppForm,
-                appFormDriveId: finalAppFormDriveId,
-                // 추가설명서 메타
-                addDescHasFile: uploadType === 'file' && !!vFileAddDesc,
-                addDescDriveId: finalAddDescDriveId
-            };
-
-            try {
-                if (uploadType === 'file') {
-                    if (vFiles.length > 0) await saveVideoFile(vId, vFiles.length === 1 ? vFiles[0] : vFiles);
-                    if (vFileAppForm) await saveVideoFile(vId + '_appForm', vFileAppForm);
-                    if (vFileAddDesc) await saveVideoFile(vId + '_addDesc', vFileAddDesc);
-                }
-            } catch (e) {
-                alert('파일 DB 저장 중 오류 발생');
-                console.error(e);
-            }
-
-            window.currentAdminData.videos.push(newVideo);
-            window.saveAdminData();
-            window.renderVideoList();
-
-            btn.innerText = "영상 등록";
-            btn.disabled = false;
-            alert('영상이 목록에 추가되었습니다.');
-
-            // 초기화
-            document.getElementById('vDriveIdAddDesc').value = '';
-
-            // 카테고리 초기화
-            selectedCategories = [];
-            renderCategoryChips();
-        });
-
-        let currentEditingVideoIndex = -1;
-        let tempSeriesData = [];
-
-        window.openFileManager = (index) => {
-            currentEditingVideoIndex = index;
-            const v = window.currentAdminData.videos[index];
-            document.getElementById('fmVideoTitle').innerText = `${v.id} - ${v.title}`;
-
-            // 기존 driveIds만 있고 seriesData가 없는 구형 데이터 호환 처리
-            tempSeriesData = v.seriesData ? JSON.parse(JSON.stringify(v.seriesData)) :
-                (v.driveIds || []).map(id => ({ id: id, name: '시리즈 작품', folderName: '', type: v.mainType || 'video' }));
-
-            renderFileManagerList();
-            document.getElementById('fileManagerModal').style.display = 'flex';
-        };
-
-        function renderFileManagerList() {
-            const body = document.getElementById('fmFileListBody');
-            body.innerHTML = '';
-
-            tempSeriesData.forEach((item, idx) => {
-                const row = document.createElement('tr');
-                const icon = item.type === 'folder' ? '📁' : (item.type === 'video' ? '🎬' : '📄');
-
-                row.innerHTML = `
-                    <td>${icon} ${item.type}</td>
-                    <td><input type="text" value="${item.name}" onchange="updateTempItem(${idx}, 'name', this.value)" style="width:100%; font-size:0.8rem;"></td>
-                    <td><input type="text" value="${item.id}" onchange="updateTempItem(${idx}, 'id', this.value)" style="width:100%; font-size:0.8rem;"></td>
-                    <td>
-                        <button class="btn secondary" style="padding:2px 5px; font-size:0.7rem; background:#fee2e2; color:#ef4444; border:none;" onclick="deleteTempItem(${idx})">삭제</button>
-                    </td>
-                `;
-                body.appendChild(row);
-
-                // 폴더인 경우 자식 노드들도 표시 (수정/삭제는 부모 단위로만 일단 구현 - 자식은 스캔 결과물이므로)
-                if (item.children && item.children.length > 0) {
-                    item.children.forEach(child => {
-                        const cRow = document.createElement('tr');
-                        cRow.style.background = '#f9fafb';
-                        cRow.innerHTML = `
-                            <td style="padding-left:20px; font-size:0.75rem; color:#666;">└ ${child.type}</td>
-                            <td style="font-size:0.75rem; color:#666;">${child.name}</td>
-                            <td style="font-size:0.75rem; color:#999; overflow:hidden; text-overflow:ellipsis; max-width:150px;">${child.id}</td>
-                            <td></td>
-                        `;
-                        body.appendChild(cRow);
+            mainSelect.addEventListener('change', () => {
+                const mainCat = mainSelect.value;
+                subSelect.innerHTML = '';
+                if (JUDGING_SCHEMA[mainCat] && JUDGING_SCHEMA[mainCat].sub) {
+                    Object.keys(JUDGING_SCHEMA[mainCat].sub).forEach(subKey => {
+                        const opt = document.createElement('option');
+                        opt.value = subKey;
+                        opt.innerText = JUDGING_SCHEMA[mainCat].sub[subKey].name;
+                        subSelect.appendChild(opt);
                     });
                 }
             });
+
+            // Trigger initially
+            mainSelect.dispatchEvent(new Event('change'));
         }
 
-        window.updateTempItem = (idx, key, val) => { tempSeriesData[idx][key] = val; };
-        window.deleteTempItem = (idx) => {
-            if (confirm('이 항목을 삭제하시겠습니까?')) {
-                tempSeriesData.splice(idx, 1);
-                renderFileManagerList();
+        document.getElementById('addVideoBtn').addEventListener('click', () => {
+            const id = document.getElementById('newVideoId').value.trim();
+            const title = document.getElementById('newVideoTitle').value.trim();
+            const mainCat = document.getElementById('newVideoMainCat').value;
+            const subCat = document.getElementById('newVideoSubCat').value;
+            const metaType = document.getElementById('newVideoMetaType').value;
+
+            if (!id || !title) return alert('작품 고유 ID와 명칭을 반드시 입력해주세요.');
+
+            if (!window.currentAdminData.videos) {
+                window.currentAdminData.videos = [];
             }
-        };
 
-        window.closeFileManager = () => {
-            document.getElementById('fileManagerModal').style.display = 'none';
-        }
+            // 중복 확인
+            if (window.currentAdminData.videos.find(v => v.id === id)) {
+                return alert('이미 존재하는 고유 ID입니다.');
+            }
 
-        window.saveFileChanges = () => {
-            if (currentEditingVideoIndex === -1) return;
-            window.currentAdminData.videos[currentEditingVideoIndex].seriesData = tempSeriesData;
-            // driveIds 동기화 (하위 호환성)
-            window.currentAdminData.videos[currentEditingVideoIndex].driveIds = tempSeriesData.map(d => d.id);
+            window.currentAdminData.videos.push({
+                id: id,
+                title: title,
+                mainCategory: mainCat,
+                subCategory: subCat,
+                metaType: metaType
+            });
+            
+            // 등록 후 필드 비우기
+            document.getElementById('newVideoId').value = '';
+            document.getElementById('newVideoTitle').value = '';
 
+            window.renderVideoList();
             window.saveAdminData();
+        });
+
+        document.getElementById('bulkAddBtn').addEventListener('click', () => {
+            const text = document.getElementById('bulkDataInput').value.trim();
+            if (!text) return alert('데이터를 입력해주세요.');
+
+            const lines = text.split('\n');
+            let addedCount = 0;
+            let errorCount = 0;
+
+            if (!window.currentAdminData.videos) {
+                window.currentAdminData.videos = [];
+            }
+
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 5) {
+                    const id = parts[0].trim();
+                    const title = parts[1].trim();
+                    const mainCat = parts[2].trim();
+                    const subCat = parts[3].trim();
+                    const metaType = parts[4].trim().toLowerCase(); // video or doc
+
+                    if (id && title && !window.currentAdminData.videos.find(v => v.id === id)) {
+                        window.currentAdminData.videos.push({
+                            id: id,
+                            title: title,
+                            mainCategory: mainCat,
+                            subCategory: subCat,
+                            metaType: metaType
+                        });
+                        addedCount++;
+                    } else {
+                        errorCount++;
+                    }
+                }
+            });
+
+            alert(`총 ${addedCount}건 추가 완료 (중복/형식오류 무시: ${errorCount}건)`);
+            document.getElementById('bulkDataInput').value = '';
+            
             window.renderVideoList();
-            closeFileManager();
-            alert('변경사항이 저장되었습니다.');
+            window.saveAdminData();
+        });
+
+        window.deleteVideo = function (index) {
+            if (confirm('이 출품작을 목록에서 정말 삭제하시겠습니까?')) {
+                window.currentAdminData.videos.splice(index, 1);
+                window.renderVideoList();
+                window.saveAdminData();
+            }
         };
 
-        window.deleteVideo = async (index) => {
-            if (confirm('이 영상을 삭제하시겠습니까?')) {
-                const v = window.currentAdminData.videos[index];
-                if (v.hasFile) await deleteVideoFile(v.id);
-                window.currentAdminData.videos.splice(index, 1);
-                window.saveAdminData();
-                window.renderVideoList();
-            }
-        }
-
-        // ================= CSV 일괄 등록 로직 =================
-        document.getElementById('uploadBatchCsvBtn').addEventListener('click', () => {
-            const fileInput = document.getElementById('batchCsvFile');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert('업로드할 CSV 파일을 선택해주세요.');
-                return;
-            }
-
-            const btn = document.getElementById('uploadBatchCsvBtn');
-            btn.innerText = "처리 중...";
-            btn.disabled = true;
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const text = e.target.result;
-                const rows = text.split('\n');
-
-                if (rows.length < 2) {
-                    alert('데이터가 없거나 형식이 올바르지 않습니다.');
-                    btn.innerText = "CSV 일괄 등록";
-                    btn.disabled = false;
-                    return;
-                }
-
-                let successCount = 0;
-                let newVideos = [];
-
-                for (let i = 1; i < rows.length; i++) {
-                    const rowText = rows[i].trim();
-                    if (!rowText) continue;
-
-                    const cols = rowText.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || rowText.split(',');
-                    const cleanCols = cols.map(c => c.replace(/^"|"$/g, '').trim());
-
-                    if (cleanCols.length < 8) continue;
-
-                    const vId = cleanCols[0];
-                    const vTitle = cleanCols[1] || '제목 없음';
-                    const vCompany = cleanCols[2] || '미상';
-                    const vMainCat = cleanCols[3] || 'marketing_campaign';
-                    const vSubCat = cleanCols[4] || 'default';
-                    const mainType = cleanCols[5] === 'doc' ? 'doc' : 'video';
-                    const uploadType = 'drive';
-                    const vDriveIdStr = cleanCols[7] || '';
-                    const vDriveAppForm = cleanCols[8] || null;
-                    const vDriveAddDesc = cleanCols[9] || null;
-
-                    const parsedDriveIds = vDriveIdStr.split(',').map(id => id.trim()).filter(id => id.length > 0);
-
-                    const newVideo = {
-                        id: vId, title: vTitle, company: vCompany,
-                        mainCat: vMainCat, subCat: vSubCat,
-                        mainType: mainType,
-                        hasFile: false, fileCount: 0,
-                        driveIds: parsedDriveIds,
-                        appFormHasFile: false,
-                        appFormDriveId: vDriveAppForm,
-                        addDescHasFile: false,
-                        addDescDriveId: vDriveAddDesc
-                    };
-
-                    newVideos.push(newVideo);
-                    successCount++;
-                }
-
-                if (newVideos.length > 0) {
-                    window.currentAdminData.videos = window.currentAdminData.videos.concat(newVideos);
-                    window.saveAdminData();
-                    window.renderVideoList();
-                    alert(`✅ 총 ${successCount}건의 작품이 성공적으로 일괄 등록되었습니다.`);
-                } else {
-                    alert('등록할 유효한 데이터가 없습니다. CSV 형식을 확인해주세요.');
-                }
-
-                btn.innerText = "CSV 일괄 등록";
-                btn.disabled = false;
-                fileInput.value = '';
-            };
-
-            reader.onerror = function () {
-                alert('파일을 읽는 중 오류가 발생했습니다.');
-                btn.innerText = "CSV 일괄 등록";
-                btn.disabled = false;
-            };
-
-            reader.readAsText(file, 'utf-8');
-        });
-
+        // 데이터가 모두 로드된 시점에 발생하는 이벤트를 가로채어 렌더링
         window.addEventListener('adminDataLoaded', () => {
+            initCategoryDropdowns();
             window.renderVideoList();
         });
 
-        // 초기 로드가 이미 다 끝난 상태의 렌더링 대비
         if (window.currentAdminData && window.currentAdminData.videos) {
+            initCategoryDropdowns();
             window.renderVideoList();
         }
+
     </script>
 </body>
 

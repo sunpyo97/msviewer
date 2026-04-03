@@ -103,10 +103,13 @@
                             </button>
                         </div>
                     </div>
-                    <select id="videoSelect"
-                        style="width: auto; margin-top: 0; background: #ffffff; color: #000000; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-weight: 600;">
-                        <!-- JS dynamic -->
-                    </select>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <select id="videoSelect"
+                            style="width: auto; margin-top: 0; background: #ffffff; color: #000000; border: 1px solid #ddd; padding: 5px 10px; border-radius: 6px; font-weight: 600;">
+                            <!-- JS dynamic -->
+                        </select>
+                        <button id="nextUnscoredBtn" style="padding: 5px 14px; font-size: 12px; font-weight: 700; white-space: nowrap; background: #059669; color: white; border: 1px solid #059669; border-radius: 6px; cursor: pointer; line-height: 1.4;">다음 미채점 →</button>
+                    </div>
                 </div>
                 <p id="currentVideoInfo">데이터베이스 연결을 확인하고 있습니다.</p>
             </div>
@@ -162,7 +165,17 @@
 
     <script src="firebase-config.js"></script>
     <script src="judging-schema.js?v=2.0"></script>
-    <script src="video-db.js"></script>
+
+
+    <!-- 소부문 완료 모달 -->
+    <div id="subCatCompleteModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:10000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:32px; border-radius:14px; width:90%; max-width:480px; position:relative; color:#333; box-shadow: 0 20px 60px rgba(0,0,0,0.4);">
+            <h2 id="subCatCompleteTitle" style="margin: 0 0 6px 0; font-size: 1.15rem; color: #059669;"></h2>
+            <p style="color: #64748b; margin: 0 0 24px 0; font-size: 0.9rem;">해당 소부문의 모든 작품 심사가 완료되었습니다.<br>다음 심사할 부문을 선택하거나 현재 화면을 유지하세요.</p>
+            <div id="subCatNextList"></div>
+            <button id="subCatCompleteCloseBtn" style="width:100%; margin-top:8px; padding: 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; color: #64748b; font-size: 0.9rem; font-weight: 600; cursor: pointer;">현재 화면 유지</button>
+        </div>
+    </div>
 
     <!-- 내 심사 결과 모달 -->
     <div id="myScoresModal" class="modal"
