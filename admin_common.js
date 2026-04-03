@@ -59,9 +59,13 @@ function getAdminData() {
                 saveAdminData();
             }
 
-            // 배열 누락 방지 (results는 로컬에서는 항상 배열로 유지)
+            // 배열 누락 방지 및 Firebase object→array 변환
             if (!currentAdminData.judges) currentAdminData.judges = [];
+            else if (!Array.isArray(currentAdminData.judges)) currentAdminData.judges = Object.values(currentAdminData.judges);
+
             if (!currentAdminData.videos) currentAdminData.videos = [];
+            else if (!Array.isArray(currentAdminData.videos)) currentAdminData.videos = Object.values(currentAdminData.videos);
+
             if (!currentAdminData.results) currentAdminData.results = [];
 
             window.currentAdminData = currentAdminData;
