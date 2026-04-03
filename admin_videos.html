@@ -34,40 +34,50 @@
             <div class="config-group">
                 <h4>신규 출품작 단건 등록</h4>
                 <div class="form-container">
-                    <label>출품작 고유 ID (유튜브/드라이브 ID)</label>
-                    <input type="text" id="newVideoId" placeholder="예: 1IgWscu6jsZVLyspbIeBgbTw_BohoeSRc">
+                    <label>출품번호 <span style="color:#ef4444;">*</span></label>
+                    <input type="text" id="newVideoId" placeholder="예: AD-001">
 
-                    <label>작품 명 (Title)</label>
+                    <label>작품명 <span style="color:#ef4444;">*</span></label>
                     <input type="text" id="newVideoTitle" placeholder="예: 2026 KODAF 통합 캠페인">
 
-                    <label>대분류 (Main Category)</label>
+                    <label>출품사</label>
+                    <input type="text" id="newVideoCompany" placeholder="예: (주)애드에이전시">
+
+                    <label>대분류 <span style="color:#ef4444;">*</span></label>
                     <select id="newVideoMainCat">
                         <!-- 스키마로부터 동적 로드 -->
                     </select>
 
-                    <label>소분류 (Sub Category)</label>
+                    <label>소분류 <span style="color:#ef4444;">*</span></label>
                     <select id="newVideoSubCat">
                         <!-- 스키마로부터 동적 로드 -->
                     </select>
 
-                    <label>자료 유형 (영상/문서)</label>
-                    <select id="newVideoMetaType">
-                        <option value="video">동영상 (유튜브/구글드라이브 영상)</option>
-                        <option value="doc">문서 (구글드라이브 PDF, PPT)</option>
+                    <label>자료 유형 <span style="color:#ef4444;">*</span></label>
+                    <select id="newVideoMainType">
+                        <option value="video">동영상 (구글드라이브 영상)</option>
+                        <option value="doc">문서 (구글드라이브 PDF/PPT)</option>
+                        <option value="ppt">프레젠테이션 (PPT — Office 뷰어)</option>
+                        <option value="folder">폴더 (구글드라이브 폴더)</option>
                     </select>
 
-                    <button class="btn primary" id="addVideoBtn" style="width: 100%; margin-top: 15px;">출품작 등록</button>
+                    <label>구글 드라이브 ID 또는 URL</label>
+                    <input type="text" id="newVideoDriveId" placeholder="예: 1IgWscu6jsZVLyspbIeBgbTw_BohoeSRc">
+                    <p style="font-size:0.75rem; color:#888; margin: -8px 0 10px 0;">구글 드라이브 공유 URL 또는 파일 ID를 입력하세요. ID만 자동 추출됩니다.</p>
+
+                    <button class="btn primary" id="addVideoBtn" style="width: 100%; margin-top: 10px;">출품작 등록</button>
                 </div>
 
                 <hr style="margin: 20px 0;">
 
                 <h4>대량 일괄 등록 (CSV 복사 붙여넣기)</h4>
                 <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">
-                    엑셀에서 복사한 데이터를 붙여넣으세요. 형식: ID, 제목, 대분류키, 소분류키, 유형(video/doc)<br>
-                    예시: <code>abc_123, 삼성 캠페인, integrated_marketing, it_service, video</code>
+                    엑셀에서 복사한 데이터를 붙여넣으세요.<br>
+                    형식: <code>출품번호, 작품명, 출품사, 대분류키, 소분류키, 유형(video/doc), 드라이브ID</code><br>
+                    예시: <code>AD-001, 삼성 캠페인, 삼성전자, marketing_campaign, sns_marketing, video, 1IgWs...</code>
                 </p>
-                <textarea id="bulkDataInput" class="bulk-textarea" placeholder="아이디, 작품명, 대분류코드, 소분류코드, 유형"></textarea>
-                <button class="btn secondary" id="bulkAddBtn" style="width: 100%;">엑셀 데이터 일괄 구문 분석 및 추가</button>
+                <textarea id="bulkDataInput" class="bulk-textarea" placeholder="출품번호, 작품명, 출품사, 대분류코드, 소분류코드, 유형, 드라이브ID"></textarea>
+                <button class="btn secondary" id="bulkAddBtn" style="width: 100%;">엑셀 데이터 일괄 등록</button>
             </div>
 
             <!-- 출품작 목록 섹션 -->
@@ -169,79 +179,86 @@
             mainSelect.dispatchEvent(new Event('change'));
         }
 
+        // 구글 드라이브 URL에서 ID만 추출하는 헬퍼
+        function extractDriveId(input) {
+            if (!input) return '';
+            const match = input.match(/[-\w]{25,}/);
+            return match ? match[0] : input.trim();
+        }
+
         document.getElementById('addVideoBtn').addEventListener('click', () => {
             const id = document.getElementById('newVideoId').value.trim();
             const title = document.getElementById('newVideoTitle').value.trim();
+            const company = document.getElementById('newVideoCompany').value.trim();
             const mainCat = document.getElementById('newVideoMainCat').value;
             const subCat = document.getElementById('newVideoSubCat').value;
-            const metaType = document.getElementById('newVideoMetaType').value;
+            const mainType = document.getElementById('newVideoMainType').value;
+            const driveId = extractDriveId(document.getElementById('newVideoDriveId').value);
 
-            if (!id || !title) return alert('작품 고유 ID와 명칭을 반드시 입력해주세요.');
+            if (!id || !title) return alert('출품번호와 작품명은 필수 입력 항목입니다.');
 
-            if (!window.currentAdminData.videos) {
-                window.currentAdminData.videos = [];
-            }
+            if (!window.currentAdminData.videos) window.currentAdminData.videos = [];
 
-            // 중복 확인
             if (window.currentAdminData.videos.find(v => v.id === id)) {
-                return alert('이미 존재하는 고유 ID입니다.');
+                return alert('이미 존재하는 출품번호입니다.');
             }
 
             window.currentAdminData.videos.push({
                 id: id,
                 title: title,
-                mainCategory: mainCat,
-                subCategory: subCat,
-                metaType: metaType
+                company: company,
+                mainCat: mainCat,
+                subCat: subCat,
+                mainType: mainType,
+                driveId: driveId
             });
-            
-            // 등록 후 필드 비우기
+
             document.getElementById('newVideoId').value = '';
             document.getElementById('newVideoTitle').value = '';
+            document.getElementById('newVideoCompany').value = '';
+            document.getElementById('newVideoDriveId').value = '';
 
             window.renderVideoList();
             window.saveAdminData();
+            alert(`"${title}" 등록 완료`);
         });
 
         document.getElementById('bulkAddBtn').addEventListener('click', () => {
             const text = document.getElementById('bulkDataInput').value.trim();
             if (!text) return alert('데이터를 입력해주세요.');
 
+            if (!window.currentAdminData.videos) window.currentAdminData.videos = [];
+
             const lines = text.split('\n');
             let addedCount = 0;
             let errorCount = 0;
 
-            if (!window.currentAdminData.videos) {
-                window.currentAdminData.videos = [];
-            }
-
             lines.forEach(line => {
+                if (!line.trim()) return;
                 const parts = line.split(',');
                 if (parts.length >= 5) {
-                    const id = parts[0].trim();
-                    const title = parts[1].trim();
-                    const mainCat = parts[2].trim();
-                    const subCat = parts[3].trim();
-                    const metaType = parts[4].trim().toLowerCase(); // video or doc
+                    const id       = parts[0].trim();
+                    const title    = parts[1].trim();
+                    const company  = parts[2].trim();
+                    const mainCat  = parts[3].trim();
+                    const subCat   = parts[4].trim();
+                    const mainType = (parts[5] || '').trim().toLowerCase() || 'video';
+                    const driveId  = extractDriveId(parts[6] || '');
 
                     if (id && title && !window.currentAdminData.videos.find(v => v.id === id)) {
-                        window.currentAdminData.videos.push({
-                            id: id,
-                            title: title,
-                            mainCategory: mainCat,
-                            subCategory: subCat,
-                            metaType: metaType
-                        });
+                        window.currentAdminData.videos.push({ id, title, company, mainCat, subCat, mainType, driveId });
                         addedCount++;
                     } else {
                         errorCount++;
                     }
+                } else {
+                    errorCount++;
                 }
             });
 
-            alert(`총 ${addedCount}건 추가 완료 (중복/형식오류 무시: ${errorCount}건)`);
+            alert(`${addedCount}건 추가 완료${errorCount > 0 ? ` (형식오류/중복 무시: ${errorCount}건)` : ''}`);
             document.getElementById('bulkDataInput').value = '';
-            
+
             window.renderVideoList();
             window.saveAdminData();
         });
