@@ -154,7 +154,8 @@ if (currentJudge) {
             window.isPopupFocused = false;
             // 지연 후에 실제로 어떤 창도 포커스가 없다면 차단
             setTimeout(() => {
-                if (!document.hasFocus() && !isPopupFocused) {
+                const hasOpenPopup = window.openedPopups.some(p => p.win && !p.win.closed);
+                if (!document.hasFocus() && !isPopupFocused && !hasOpenPopup) {
                     document.body.classList.add('secure-blur');
                 }
             }, 300);
@@ -1435,6 +1436,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener("visibilitychange", () => {
+        const hasOpenPopup = window.openedPopups.some(p => p.win && !p.win.closed);
+        if (hasOpenPopup) return; // 팝업창이 열려있다면 화면 탭 전환으로 간주하여 블랙아웃 방지
+        
         if (document.hidden) { 
             isCaptureLocked = true; 
             applyBlackout('(화면 숨김/전환 감지)'); 
@@ -1450,15 +1454,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 클릭된 요소가 문서 뷰어(iframe)인 경우 예외 처리
         if (document.activeElement && document.activeElement.id === 'documentViewer') return;
         
-        // 팝업창(secure-viewer) 포커스 예외 처리
-        const _openedPopups = window.openedPopups || [];
-        const _isPopupFocused = window.isPopupFocused || false;
-        if (_isPopupFocused) return;
-        
-        const isFocusOnPopupByDoc = _openedPopups.some(p => {
-            try { return p.win && !p.win.closed && p.win.document.hasFocus(); } catch (e) { return false; }
-        });
-        if (isFocusOnPopupByDoc) return;
+        // 팝업창(secure-viewer) 포커스 예외 처리 (크로스오리진 문제 해결: 열려있는 팝업이 있다면 무시)
+        const hasOpenPopup = window.openedPopups.some(p => p.win && !p.win.closed);
+        if (hasOpenPopup) return;
 
         isCaptureLocked = true; 
         applyBlackout('(포커스 이탈 감지)'); 

@@ -225,7 +225,7 @@
         });
 
         document.addEventListener('keyup', (e) => {
-            if (e.key === 'PrintScreen' || e.key === 'Meta' || e.keyCode === 44) { 
+            if (e.key === 'PrintScreen' || e.keyCode === 44) { 
                 isCaptureLocked = true; 
                 applyBlackout('(화면 캡처 시도 감지)'); 
                 try { navigator.clipboard.writeText('보안 위반: 클립보드 오염 처리됨'); } catch(err) {}
