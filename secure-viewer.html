@@ -134,24 +134,7 @@
                 iframe.src = fileId;
             } else {
                 const cleanId = fileId.match(/[-\w]{25,}/) ? fileId.match(/[-\w]{25,}/)[0] : fileId;
-                
-                // 엑셀/문서 판별 동적 로딩 (구글 뷰어의 좌측 쏠림 UI 개선 목적)
-                const API_KEY = 'AIzaSyCm7hOx1WF320aDZtXyWahLe768bHZjBps';
-                const apiUrl = `https://www.googleapis.com/drive/v3/files/${cleanId}?fields=mimeType,name&key=${API_KEY}`;
-                
-                fetch(apiUrl).then(res => res.json()).then(data => {
-                    const mime = data.mimeType || '';
-                    const name = (data.name || '').toLowerCase();
-                    
-                    if (mime.includes('spreadsheet') || mime.includes('excel') || name.endsWith('.xlsx') || name.endsWith('.xls') || mime.includes('presentation') || name.endsWith('.ppt') || name.endsWith('.pptx')) {
-                        const fileUrl = `https://drive.google.com/uc?export=download&id=${cleanId}`;
-                        iframe.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
-                    } else {
-                        iframe.src = `https://drive.google.com/file/d/${cleanId}/preview`;
-                    }
-                }).catch(() => {
-                    iframe.src = `https://drive.google.com/file/d/${cleanId}/preview`;
-                });
+                iframe.src = `https://drive.google.com/file/d/${cleanId}/preview`;
             }
         }
 
