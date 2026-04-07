@@ -245,35 +245,17 @@
             }
         });
 
-        // 유연한 캡처 차단 (Soft-Blackout)
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden) { 
-                if (blackout && !isCaptureLocked) {
-                    blackout.classList.add('active');
-                    const reasonEl = blackout.querySelector('.reason-text');
-                    if (reasonEl) reasonEl.innerText = '(화면 숨김 감지 - 포커스가 복귀되면 해제됩니다)';
-                }
-            } else { 
-                if (!isCaptureLocked) removeBlackout(); 
-            }
-        });
-
-        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용) 및 캡처방어용 Soft-Blackout
+        // 포커스/마우스 이탈 감지 시 블랙아웃 기능 제거 (사용자 가시성 우선)
+        
+        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용)
         window.addEventListener('focus', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-focus', '*');
             if (!isCaptureLocked) removeBlackout();
         });
+        
         window.addEventListener('blur', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-blur', '*');
-            // iframe(구글 뷰어 내부 탭 등)을 클릭하여 포커스를 잃은 경우는 예외
-            if (document.activeElement && document.activeElement.tagName === 'IFRAME') return;
-            
-            // 캡처도구(Snipping Tool 등)가 포커스를 빼앗을 경우 즉시 블랙아웃
-            if (blackout && !isCaptureLocked) {
-                blackout.classList.add('active');
-                const reasonEl = blackout.querySelector('.reason-text');
-                if (reasonEl) reasonEl.innerText = '(포커스 이탈 감지 - 캡처 도구 실행 차단)';
-            }
+            // 메인 화면과 팝업창(신청서)을 동시에 띄워놓고 볼 수 있도록 blur 시 팝업 창은 블랙아웃되지 않게 롤백
         });
 
         // 메인 창이 닫히면 함께 닫히도록 설정
