@@ -427,7 +427,8 @@ if (currentJudge) {
             videoTag.style.display = 'none';
             videoTag.pause();
             iframeTag.style.display = 'none';
-            iframeTag.src = '';
+            // 즉시 src를 비우면 브라우저에 따라 다음 호출이 씹히는 현상 방지
+            iframeTag.src = 'about:blank';
             placeholder.style.display = 'none';
             console.log(`[PlaySource] ID: ${driveId}, MetaType: ${type}`);
 
@@ -449,7 +450,9 @@ if (currentJudge) {
                     iframeTag.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
                 } else {
                     // 이미지, PDF, 문서, 엑셀 등 모든 파일은 보안 이슈(비공개 링크)로 인해 구글 기본 preview 형식을 고정 사용합니다.
-                    iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+                    setTimeout(() => {
+                        iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+                    }, 50);
                 }
                 iframeTag.onload = () => {
                     console.log("KODAF Security: Iframe loaded, refreshing watermark.");
