@@ -1013,6 +1013,10 @@ if (submitBtn) {
                 } else {
                     window.currentData.results.push(result);
                 }
+                
+                // UI 콤보박스에 [완료] 상태 즉각 반영
+                updateVideoList(result.mainCat, result.subCat);
+                
                 alert('심사 결과가 저장되었습니다.');
                 goToNextUnscored();
             })
@@ -1246,17 +1250,27 @@ function resetScoreInputs() {
 }
 
 function goToNextUnscored() {
-    const mainCat = document.getElementById('mainCategorySelect').value;
-    const subCat = document.getElementById('subCategorySelect').value;
-    const currentVideoIndex = parseInt(document.getElementById('videoSelect').value) || 0;
+    try {
+        const mainCat = document.getElementById('mainCategorySelect').value;
+        const subCat = document.getElementById('subCategorySelect').value;
+        const valStr = document.getElementById('videoSelect').value;
+        
+        let currentVideoIndex = parseInt(valStr);
+        if (isNaN(currentVideoIndex)) currentVideoIndex = -1;
 
-    const nextIdx = findNextUnscoredVideo(mainCat, subCat, currentVideoIndex);
-    if (nextIdx !== null) {
-        resetScoreInputs();
-        document.getElementById('videoSelect').value = nextIdx;
-        loadVideo(nextIdx);
-    } else {
-        showSubCatCompleteModal(mainCat, subCat);
+        const nextIdx = findNextUnscoredVideo(mainCat, subCat, currentVideoIndex);
+        
+        if (nextIdx !== null) {
+            updateVideoList(mainCat, subCat); // [완료]/[미채점] 텍스트 최신화 보장
+            resetScoreInputs();
+            document.getElementById('videoSelect').value = nextIdx;
+            loadVideo(nextIdx);
+        } else {
+            updateVideoList(mainCat, subCat);
+            showSubCatCompleteModal(mainCat, subCat);
+        }
+    } catch(e) {
+        console.error("다음 미채점 이동 에러:", e);
     }
 }
 
