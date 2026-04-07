@@ -66,10 +66,10 @@
             </div>
             <p style="color:#374151; margin:0 0 8px 0; line-height:1.6;">
                 현재 등록된 <strong id="clearResultsCount" style="color:#dc2626;"></strong>의 심사 결과가 <strong>영구 삭제</strong>됩니다.<br>
-                삭제 전 Firebase에 자동 백업본이 생성됩니다.
+                삭제 전 엑셀(CSV) 파일로 전체 데이터가 다운로드됩니다.
             </p>
             <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px; margin-bottom:20px;">
-                <p style="margin:0; font-size:0.85rem; color:#dc2626;">⚠ 백업은 Firebase 콘솔에서만 복구 가능합니다. 신중하게 진행하세요.</p>
+                <p style="margin:0; font-size:0.85rem; color:#dc2626;">⚠ 삭제된 데이터는 복구할 수 없습니다. 신중하게 진행하세요.</p>
             </div>
             <label style="display:block; font-size:0.9rem; font-weight:600; margin-bottom:6px; color:#374151;">
                 계속하려면 아래에 <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">초기화</code> 를 입력하세요.
@@ -80,7 +80,7 @@
                 <button id="clearResultsCancelBtn" style="flex:1; padding:10px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95rem; font-weight:600; cursor:pointer; color:#374151;">취소</button>
                 <button id="clearResultsConfirmBtn" disabled
                     style="flex:1; padding:10px; background:#dc2626; border:none; border-radius:8px; font-size:0.95rem; font-weight:700; cursor:pointer; color:white; opacity:0.4; transition:opacity 0.2s;">
-                    백업 후 삭제
+                    엑셀 다운로드 후 삭제
                 </button>
             </div>
             <p id="clearResultsStatus" style="margin:12px 0 0 0; font-size:0.85rem; color:#64748b; text-align:center; min-height:1.2em;"></p>
@@ -222,23 +222,35 @@
         clearConfirmBtn.addEventListener('click', async () => {
             clearConfirmBtn.disabled = true;
             clearStatusEl.style.color = '#64748b';
-            clearStatusEl.innerText = '백업 중...';
+            clearStatusEl.innerText = '엑셀 다운로드 및 삭제 중...';
 
             try {
-                // 1. 현재 results를 백업 노드에 저장
-                const now = new Date();
-                const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
-                const backupKey = `results_backup_${stamp}`;
+                // 1. 전체 데이터 엑셀(CSV) 다운로드
+                const resultsToExport = window.currentAdminData.results || [];
+                if (resultsToExport.length > 0) {
+                    let csv = "\uFEFF일시,심사위원ID,심사위원성함,대분류,소분류,영상번호,영상제목,전략성,기술성,예술성,메시지전달력,성과대중성,심사평,총합\n";
+                    resultsToExport.forEach(res => {
+                        const s = res.scores || {};
+                        const row = [
+                            res.timestamp, res.judgeId, res.judgeName,
+                            JUDGING_SCHEMA[res.mainCat]?.name, JUDGING_SCHEMA[res.mainCat]?.sub[res.subCat]?.name,
+                            res.videoId, `"${(res.videoTitle || '').replace(/"/g, '""')}"`,
+                            s.strategic, s.technical, s.artistic, s.delivery, s.performance,
+                            `"${res.comment || ''}"`, res.total
+                        ].join(',');
+                        csv += row + "\n";
+                    });
 
-                // 로컬 배열을 객체로 변환 후 백업 노드에 저장
-                const resultsToBackup = {};
-                (window.currentAdminData.results || []).forEach(res => {
-                    const id = `${res.judgeId}_${res.videoId}_${res.mainCat}_${res.subCat}`.replace(/[^a-zA-Z0-9_]/g, '_');
-                    resultsToBackup[id] = res;
-                });
-                await window.firebaseSet(window.firebaseRef(window.firebaseDB, `adminData/${backupKey}`), resultsToBackup);
-
-                clearStatusEl.innerText = `백업 완료 (${backupKey}). 삭제 중...`;
+                    const now = new Date();
+                    const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `Judge_Results_Backup_${stamp}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
 
                 // 2. results 노드만 직접 삭제 (saveAdminData 우회 — results는 별도 경로로 관리)
                 await window.firebaseSet(window.firebaseRef(window.firebaseDB, 'adminData/results'), {});
@@ -248,7 +260,7 @@
                 window.renderDashboard();
 
                 clearStatusEl.style.color = '#059669';
-                clearStatusEl.innerText = `✅ 삭제 완료. 백업: adminData/${backupKey}`;
+                clearStatusEl.innerText = `✅ 엑셀 다운로드 및 삭제 완료.`;
 
                 setTimeout(() => { clearModal.style.display = 'none'; }, 2500);
             } catch (err) {
