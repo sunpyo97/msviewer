@@ -701,6 +701,58 @@ if (currentJudge) {
         else {
             playSource(video.id, null, isDocType);
         }
+        
+        // --- 복원: 신청서 및 추가설명서 버튼 ---
+        if (playlistContainer) {
+            if (video.appFormDriveId) {
+                const btnApp = document.createElement('button');
+                btnApp.className = 'series-btn';
+                btnApp.innerText = `📄 신청서`;
+                btnApp.style.marginLeft = '10px'; btnApp.style.borderColor = '#10b981';
+                btnApp.onclick = () => {
+                    document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
+                    btnApp.classList.add('active');
+                    playSource(video.appFormDriveId, false, 'doc');
+                };
+                playlistContainer.appendChild(btnApp);
+
+                const btnAppPop = document.createElement('button');
+                btnAppPop.className = 'series-btn popout-btn';
+                btnAppPop.innerHTML = `↗`;
+                btnAppPop.title = "새 창에서 열기";
+                btnAppPop.style.cssText = 'margin-left: 2px; border-color: #10b981; padding: 2px 8px; font-size: 14px;';
+                btnAppPop.onclick = (e) => {
+                    e.stopPropagation();
+                    popoutDocument(video.appFormDriveId, false);
+                };
+                playlistContainer.appendChild(btnAppPop);
+            }
+
+            if (video.addDescDriveId) {
+                const btnDesc = document.createElement('button');
+                btnDesc.className = 'series-btn';
+                btnDesc.innerText = `📄 추가설명서`;
+                btnDesc.style.borderColor = '#8b5cf6';
+                btnDesc.onclick = () => {
+                    document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
+                    btnDesc.classList.add('active');
+                    playSource(video.addDescDriveId, false, 'doc');
+                };
+                playlistContainer.appendChild(btnDesc);
+
+                const btnDescPop = document.createElement('button');
+                btnDescPop.className = 'series-btn popout-btn';
+                btnDescPop.innerHTML = `↗`;
+                btnDescPop.title = "새 창에서 열기";
+                btnDescPop.style.cssText = 'margin-left: 2px; border-color: #8b5cf6; padding: 2px 8px; font-size: 14px;';
+                btnDescPop.onclick = (e) => {
+                    e.stopPropagation();
+                    popoutDocument(video.addDescDriveId, false);
+                };
+                playlistContainer.appendChild(btnDescPop);
+            }
+        }
+
         document.getElementById('judgeComment').value = '';
     }
 
