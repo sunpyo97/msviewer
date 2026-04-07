@@ -25,22 +25,28 @@
             justify-content: center;
         }
 
-        iframe {
+        .iframe-wrapper {
+            position: relative;
             width: 100%;
-            max-width: 800px; /* 엑셀 신청서의 실제 폭(A~H열)에 더욱 정밀하게 맞추어 우측의 검은 여백을 없앰 */
+            max-width: 800px;
             height: 100%;
-            border: none;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
             background-color: #222;
         }
 
-        /* 구글 드라이브 UI 차단 레이어 */
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 구글 드라이브 UI 차단 레이어 (wrapper 기준 우측 상단 배치) */
         .ui-blocker {
             position: absolute;
             top: 0;
             right: 0;
-            width: 100px;
-            height: 100px;
+            width: 60px;
+            height: 60px;
             background: transparent;
             z-index: 9999;
             cursor: not-allowed;
@@ -116,9 +122,11 @@
     <div class="viewer-container">
         <!-- 워터마크 컨테이너를 뷰어 내부로 이동 -->
         <div class="watermark-container" id="watermark"></div>
-        <iframe id="secureIframe"></iframe>
-        <div class="ui-blocker" title="보안을 위해 외부 링크 기능이 차단되었습니다."></div>
-        <div class="secure-overlay"></div>
+        <div class="iframe-wrapper">
+            <iframe id="secureIframe"></iframe>
+            <div class="ui-blocker" title="보안을 위해 외부 링크 기능이 차단되었습니다."></div>
+            <div class="secure-overlay"></div>
+        </div>
     </div>
 
     <script>
@@ -237,24 +245,36 @@
             }
         });
 
-        // 포커스/마우스 이탈 감지 시 블랙아웃 기능 제거 (사용자 요청: 캡처 시도에만 반응하도록)
-        // document.addEventListener("visibilitychange", ...
-        // document.addEventListener('mouseleave', ...
-        // document.addEventListener('mouseenter', ...
+        // 유연한 캡처 차단 (Soft-Blackout)
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) { 
+                if (blackout && !isCaptureLocked) {
+                    blackout.classList.add('active');
+                    const reasonEl = blackout.querySelector('.reason-text');
+                    if (reasonEl) reasonEl.innerText = '(화면 숨김 감지 - 포커스가 복귀되면 해제됩니다)';
+                }
+            } else { 
+                if (!isCaptureLocked) removeBlackout(); 
+            }
+        });
 
-        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용)
+        // 4. 포커스 이벤트 메시징 (메인 창 보안 제어용) 및 캡처방어용 Soft-Blackout
         window.addEventListener('focus', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-focus', '*');
-            removeBlackout();
+            if (!isCaptureLocked) removeBlackout();
         });
         window.addEventListener('blur', () => {
             if (window.opener) window.opener.postMessage('trusted-popup-blur', '*');
-            // 팝업 자체는 blur 시 블랙아웃되지 않도록 적용 해제
-            // isCaptureLocked = true;
-            // applyBlackout('(포커스 이탈 감지)');
+            // iframe(구글 뷰어 내부 탭 등)을 클릭하여 포커스를 잃은 경우는 예외
+            if (document.activeElement && document.activeElement.tagName === 'IFRAME') return;
+            
+            // 캡처도구(Snipping Tool 등)가 포커스를 빼앗을 경우 즉시 블랙아웃
+            if (blackout && !isCaptureLocked) {
+                blackout.classList.add('active');
+                const reasonEl = blackout.querySelector('.reason-text');
+                if (reasonEl) reasonEl.innerText = '(포커스 이탈 감지 - 캡처 도구 실행 차단)';
+            }
         });
-
-        // 팝업창 자체는 블러(검정 화면) 처리를 하지 않음 (사용자 요청)
 
         // 메인 창이 닫히면 함께 닫히도록 설정
         window.addEventListener('message', (e) => {
