@@ -53,17 +53,23 @@
                         <!-- 스키마로부터 동적 로드 -->
                     </select>
 
-                    <label>자료 유형 <span style="color:#ef4444;">*</span></label>
-                    <select id="newVideoMainType">
-                        <option value="video">동영상 (구글드라이브 영상)</option>
-                        <option value="doc">문서 (구글드라이브 PDF/PPT)</option>
-                        <option value="ppt">프레젠테이션 (PPT — Office 뷰어)</option>
-                        <option value="folder">폴더 (구글드라이브 폴더)</option>
-                    </select>
-
-                    <label>구글 드라이브 ID 또는 URL</label>
-                    <input type="text" id="newVideoDriveId" placeholder="예: 1IgWscu6jsZVLyspbIeBgbTw_BohoeSRc">
-                    <p style="font-size:0.75rem; color:#888; margin: -8px 0 10px 0;">구글 드라이브 공유 URL 또는 파일 ID를 입력하세요. ID만 자동 추출됩니다.</p>
+                    <!-- 단일 폴더 자동 스캔 폼 (자동 매핑 방식) -->
+                    <div id="folderUploadGroup" style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #10b981; margin: 15px 0;">
+                        <label style="display:block; color: #10b981; font-weight: bold;">[자동화] 구글 드라이브 폴더 링크 (본편, 신청서, 추가설명 자동 매핑)</label>
+                        <div style="display: flex; gap: 10px; margin-top: 5px;">
+                            <input type="text" id="vFolderUrl" placeholder="예: https://drive.google.com/drive/folders/..." style="flex: 1; margin-bottom: 0;">
+                            <button class="btn secondary" id="scanFolderBtn" style="background: white; border: 1px solid #10b981; color: #10b981; white-space: nowrap;">폴더 스캔</button>
+                        </div>
+                        <div id="scanResultBox" style="margin-top: 15px; font-size: 0.85rem; display: none;">
+                            <strong style="display:block; margin-bottom:5px;">스캔된 매핑 결과:</strong>
+                            <div style="background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                                <div id="scanResVideo" style="color: #3b82f6;">🎬 작품/시리즈: <span class="val">없음</span></div>
+                                <div id="scanResApp" style="color: #10b981;">📄 신청서: <span class="val">없음</span></div>
+                                <div id="scanResDesc" style="color: #8b5cf6;">📄 추가설명: <span class="val">없음</span></div>
+                            </div>
+                            <p style="font-size: 0.7rem; color: #666; margin-top: 5px;">* 이 결과대로 작품 데이터가 묶음 구성됩니다.</p>
+                        </div>
+                    </div>
 
                     <button class="btn primary" id="addVideoBtn" style="width: 100%; margin-top: 10px;">출품작 등록</button>
                 </div>
@@ -279,16 +285,126 @@
             return match ? match[0] : input.trim();
         }
 
+        // ==== 구글 드라이브 단일 폴더 스캔 로직 (자동 매핑 복원) ====
+        let scannedSeriesData = [];
+        let scannedAppFormId = null;
+        let scannedAddDescId = null;
+        
+        // 하단 일괄 폴더 연동에서 쓰이는 키와 재사용
+        const GOOGLE_API_KEY = 'AIzaSyCm7hOx1WF320aDZtXyWahLe768bHZjBps'; 
+
+        document.getElementById('scanFolderBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const folderUrl = document.getElementById('vFolderUrl').value.trim();
+            if (!folderUrl) return alert('폴더 공유 링크를 입력해주세요.');
+
+            const folderId = extractFolderId(folderUrl);
+            if (!folderId) return alert('유효한 폴더 링크가 아닙니다.');
+
+            const btn = document.getElementById('scanFolderBtn');
+            btn.innerText = "스캔 중...";
+            btn.disabled = true;
+
+            try {
+                scannedSeriesData = [];
+                scannedAppFormId = null;
+                scannedAddDescId = null;
+
+                async function getAllNestedFiles(targetId, parentName = "", allFiles = []) {
+                    const childrenApiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetId}'+in+parents&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
+                    const childRes = await fetch(childrenApiUrl);
+                    const childData = await childRes.json();
+                    const files = childData.files || [];
+
+                    for (const c of files) {
+                        const cLower = c.name.toLowerCase();
+                        const id = c.id;
+                        const isFolder = c.mimeType === 'application/vnd.google-apps.folder';
+
+                        if (isFolder) {
+                            await getAllNestedFiles(id, c.name, allFiles);
+                        } else {
+                            let cType = 'doc';
+                            if (c.mimeType.includes('video/') || cLower.endsWith('.mp4') || cLower.endsWith('.mov')) cType = 'video';
+                            else if (c.mimeType.includes('image/') || cLower.endsWith('.jpg') || cLower.endsWith('.png') || cLower.endsWith('.jpeg')) cType = 'image';
+                            else if (c.mimeType.includes('presentation') || cLower.endsWith('.ppt') || cLower.endsWith('.pptx')) cType = 'ppt';
+
+                            const displayName = parentName ? `[${parentName}] ${c.name}` : c.name;
+                            allFiles.push({ id: id, name: displayName, type: cType });
+                        }
+                    }
+                    return allFiles;
+                }
+
+                async function scanRecursiveWithChildren(targetFolderId) {
+                    const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${targetFolderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&key=${GOOGLE_API_KEY}`;
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error(`API 호출 실패: ${response.status}`);
+                    const data = await response.json();
+                    const files = data.files || [];
+
+                    for (const file of files) {
+                        const nameLower = file.name.toLowerCase();
+                        const id = file.id;
+                        const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+
+                        if (isFolder) {
+                            const children = await getAllNestedFiles(id);
+                            scannedSeriesData.push({ id: id, name: file.name, folderName: file.name, type: 'folder', children: children });
+                        } else {
+                            if (file.mimeType.includes('video/') || nameLower.endsWith('.mp4') || nameLower.endsWith('.mov') || nameLower.endsWith('.avi')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'video' });
+                            } else if (nameLower.includes('신청') || nameLower.includes('form') || nameLower.includes('app')) {
+                                scannedAppFormId = id;
+                            } else if (nameLower.includes('설명') || nameLower.includes('desc') || nameLower.includes('보충') || nameLower.includes('자료')) {
+                                scannedAddDescId = id;
+                            } else if (file.mimeType.includes('image/') || nameLower.endsWith('.jpg') || nameLower.endsWith('.png') || nameLower.endsWith('.jpeg')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'image' });
+                            } else if (file.mimeType.includes('presentation') || nameLower.endsWith('.ppt') || nameLower.endsWith('.pptx')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'ppt' });
+                            } else if (file.mimeType.includes('pdf') || nameLower.endsWith('.pdf') || file.mimeType.includes('document') || nameLower.endsWith('.docx') || file.mimeType.includes('spreadsheet') || nameLower.endsWith('.xlsx')) {
+                                scannedSeriesData.push({ id: id, name: file.name, folderName: '', type: 'doc' });
+                            }
+                        }
+                    }
+                }
+
+                await scanRecursiveWithChildren(folderId);
+
+                if (scannedSeriesData.length === 0 && !scannedAppFormId) {
+                    alert('유효한 파일을 찾지 못했습니다.');
+                } else {
+                    const resultText = scannedSeriesData.map(d => {
+                        if (d.type === 'folder') return `📁 ${d.name} (${d.children.length}개)`;
+                        return (d.folderName ? `[${d.folderName}] ` : '') + d.name;
+                    }).join(', ');
+                    document.getElementById('scanResVideo').innerHTML = `🎬 작품/시리즈: <span style="font-weight:bold; color:#000;">${resultText}</span>`;
+                    document.getElementById('scanResApp').innerHTML = `📄 신청서: <span style="font-weight:bold; color:#000;">${scannedAppFormId || '없음'}</span>`;
+                    document.getElementById('scanResDesc').innerHTML = `📄 추가설명: <span style="font-weight:bold; color:#000;">${scannedAddDescId || '없음'}</span>`;
+                    document.getElementById('scanResultBox').style.display = 'block';
+                }
+
+            } catch (err) {
+                console.error("스캔 실패:", err);
+                alert('스캔 중 오류 발생: ' + err.message);
+            } finally {
+                btn.innerText = "폴더 스캔";
+                btn.disabled = false;
+            }
+        });
+
         document.getElementById('addVideoBtn').addEventListener('click', () => {
             const id = document.getElementById('newVideoId').value.trim();
             const title = document.getElementById('newVideoTitle').value.trim();
             const company = document.getElementById('newVideoCompany').value.trim();
             const mainCat = document.getElementById('newVideoMainCat').value;
             const subCat = document.getElementById('newVideoSubCat').value;
-            const mainType = document.getElementById('newVideoMainType').value;
-            const driveId = extractDriveId(document.getElementById('newVideoDriveId').value);
 
             if (!id || !title) return alert('출품번호와 작품명은 필수 입력 항목입니다.');
+
+            if (scannedSeriesData.length === 0 && !scannedAppFormId) {
+                return alert('먼저 폴더 링크를 입력 후 "폴더 스캔"을 진행하여 주세요.\n기존의 단일 폴더 매핑 방식을 사용합니다.');
+            }
 
             if (!window.currentAdminData.videos) window.currentAdminData.videos = [];
 
@@ -302,14 +418,21 @@
                 company: company,
                 mainCat: mainCat,
                 subCat: subCat,
-                mainType: mainType,
-                driveId: driveId
+                mainType: scannedSeriesData.length > 0 ? scannedSeriesData[0].type : 'doc',
+                seriesData: scannedSeriesData,
+                appFormDriveId: scannedAppFormId,
+                addDescDriveId: scannedAddDescId
             });
 
             document.getElementById('newVideoId').value = '';
             document.getElementById('newVideoTitle').value = '';
             document.getElementById('newVideoCompany').value = '';
-            document.getElementById('newVideoDriveId').value = '';
+            document.getElementById('vFolderUrl').value = '';
+            document.getElementById('scanResultBox').style.display = 'none';
+
+            scannedSeriesData = [];
+            scannedAppFormId = null;
+            scannedAddDescId = null;
 
             window.renderVideoList();
             window.saveAdminData();
