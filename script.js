@@ -491,7 +491,7 @@ if (currentJudge) {
             // 탭이 1개이고 다른 부가 문서(신청서 등)가 있는 경우에도 탭을 보여줌
             const showForceTab = seriesItems.length === 1 && (video.appFormDriveId || video.appFormHasFile || video.addDescDriveId || video.addDescHasFile);
 
-            if (seriesItems.length >= 10 || showForceTab) {
+            if (seriesItems.length >= 10) {
                 // UI를 드롭다운(select)으로 변경
                 const selectEl = document.createElement('select');
                 selectEl.className = 'series-select';
@@ -566,8 +566,8 @@ if (currentJudge) {
                 });
 
                 playlistContainer.appendChild(selectEl);
-            } else if (seriesItems.length > 1) {
-                // 10개 미만일 경우 원래대로 버튼 형태 렌더링
+            } else if (seriesItems.length > 1 || showForceTab) {
+                // 10개 미만 또는 보조탭 강제 활성화 시 버튼 형태 렌더링
                 seriesItems.forEach((item, idx) => {
                     const btn = document.createElement('button');
                     btn.className = `series-btn ${idx === 0 ? 'active' : ''}`;
@@ -713,6 +713,10 @@ if (currentJudge) {
                 btnApp.onclick = () => {
                     document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
                     btnApp.classList.add('active');
+                    
+                    const selectEl = playlistContainer.querySelector('.series-select');
+                    if (selectEl) selectEl.selectedIndex = -1;
+                    
                     playSource(video.appFormDriveId, false, 'doc');
                 };
                 playlistContainer.appendChild(btnApp);
@@ -737,6 +741,10 @@ if (currentJudge) {
                 btnDesc.onclick = () => {
                     document.querySelectorAll('.series-btn').forEach(b => b.classList.remove('active'));
                     btnDesc.classList.add('active');
+                    
+                    const selectEl = playlistContainer.querySelector('.series-select');
+                    if (selectEl) selectEl.selectedIndex = -1;
+                    
                     playSource(video.addDescDriveId, false, 'doc');
                 };
                 playlistContainer.appendChild(btnDesc);
