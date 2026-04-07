@@ -443,12 +443,30 @@ if (currentJudge) {
                 if (type === 'folder') {
                     // 폴더는 preview가 아니라 embeddedfolderview를 사용해야 격자 형태로 내용이 보입니다.
                     iframeTag.src = `https://drive.google.com/embeddedfolderview?id=${cleanId}#grid`;
-                } else if (type === 'ppt') {
-                    // PPT/PPTX: Microsoft Office Online Viewer 사용 (폰트 렌더링 우수, 내장 동영상 지원)
+                } else if (type === 'ppt' || type === 'excel') {
+                    // PPT/PPTX, Excel: Microsoft Office Online Viewer 사용 (폰트 렌더링 우수, 내장 동영상 지원)
                     const fileUrl = `https://drive.google.com/uc?export=download&id=${cleanId}`;
                     iframeTag.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+                } else if (type === 'doc') {
+                    // 엑셀/문서 판별 동적 로딩 (구글 뷰어의 좌측 쏠림 UI 개선 목적)
+                    const API_KEY = 'AIzaSyCm7hOx1WF320aDZtXyWahLe768bHZjBps';
+                    const apiUrl = `https://www.googleapis.com/drive/v3/files/${cleanId}?fields=mimeType,name&key=${API_KEY}`;
+                    
+                    fetch(apiUrl).then(res => res.json()).then(data => {
+                        const mime = data.mimeType || '';
+                        const name = (data.name || '').toLowerCase();
+                        
+                        if (mime.includes('spreadsheet') || mime.includes('excel') || name.endsWith('.xlsx') || name.endsWith('.xls')) {
+                            const fileUrl = `https://drive.google.com/uc?export=download&id=${cleanId}`;
+                            iframeTag.src = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+                        } else {
+                            iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+                        }
+                    }).catch(() => {
+                        iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
+                    });
                 } else {
-                    // 이미지, PDF, 문서 등 모든 파일은 /preview 형식을 사용합니다.
+                    // 이미지, 일반 비디오 등 모든 파일은 /preview 형식을 사용합니다.
                     iframeTag.src = `https://drive.google.com/file/d/${cleanId}/preview`;
                 }
                 iframeTag.onload = () => {
